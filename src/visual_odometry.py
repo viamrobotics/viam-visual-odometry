@@ -185,6 +185,7 @@ class ORBVisualOdometry(object):
                     
             if self.debug:
                 print(f"number of good_matches after ration test is {len(good_matches)}")
+                
             old_matches = np.array([self.memory.last.p[mat.queryIdx].pt for mat in good_matches])
             cur_matches = np.array([self.memory.current.p[mat.trainIdx].pt for mat in good_matches])
             return good_matches, old_matches, cur_matches

@@ -37,16 +37,15 @@ class MyOdometry(MovementSensor, Reconfigurable):
         '''
         camera_name = config.attributes.fields["camera_name"].string_value
         if camera_name == "":
-            raise Exception("A 'camera_name' attribute is required for a visual odometry movement sensor")
+            raise Exception("A 'camera_name' attribute is required for visual odometry movement sensor")
         #TODO: check that camera has a matrix
         return [camera_name]
-
+    
     def reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
 
         camera_name = config.attributes.fields["camera_name"].string_value
         camera = dependencies[Camera.get_resource_name(camera_name)]
-        # TODO:call get properties here to get the intrinsics and throw an error
-        # props = await camera.get_properties()
+        
         camera_matrix = self.get_camera_matrix()
         # distortion_parameters = self.get_distortion_parameters_from_properties(props)
         distortion_parameters = self.get_distortion_parameters()
@@ -143,7 +142,7 @@ class MyOdometry(MovementSensor, Reconfigurable):
     #     ppx = props.intrinsic_parameters.center_x_px
     #     ppy = props.intrinsic_parameters.center_y_px
     #     return get_camera_matrix(fx, fy, ppx, ppy)
-    #
+    
     # # @staticmethod
     # def get_distortion_parameters_from_properties(props: Camera.Properties):
     #     # rk1 = props.distortion_parameters.
