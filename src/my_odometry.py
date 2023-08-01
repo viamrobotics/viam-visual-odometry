@@ -15,7 +15,7 @@ from viam.resource.types import Model, ModelFamily
 
 from .visual_odometry import ORBVisualOdometry
 from .utils import get_camera_matrix, get_distort_param
-from threading import Thread
+import asyncio
 
 class MyOdometry(MovementSensor, Reconfigurable):
     MODEL: ClassVar[Model] = Model(ModelFamily("viam", "opencv"), "visual_odometry_orb")
@@ -38,18 +38,23 @@ class MyOdometry(MovementSensor, Reconfigurable):
         camera_name = config.attributes.fields["camera_name"].string_value
         if camera_name == "":
             raise Exception("A 'camera_name' attribute is required for visual odometry movement sensor")
-        #TODO: check that camera has a matrix
         return [camera_name]
     
     def reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
-
+        loop = asyncio.get_running_loop()
+        loop.create_task(self._reconfigure(config, dependencies))
+    
+    async def _reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
         camera_name = config.attributes.fields["camera_name"].string_value
         camera = dependencies[Camera.get_resource_name(camera_name)]
         
-        camera_matrix = self.get_camera_matrix()
         # distortion_parameters = self.get_distortion_parameters_from_properties(props)
-        distortion_parameters = self.get_distortion_parameters()
-        
+        props = await camera.get_properties()
+        camera_matrix = self.get_camera_matrix_from_properties(props)
+        print(f"camera matyrix si {camera_matrix}")
+        distortion_parameters = self.get_distortion_parameters_from_properties(props)
+        print(f"PROPS are {props}")
+        print(f"Type of props sis {type(props)}")
         def get_attribute_from_config(attribute_name:str,  default):
             if attribute_name not in config.attributes.fields:
                 return default
@@ -94,7 +99,7 @@ class MyOdometry(MovementSensor, Reconfigurable):
                                                 ransac_prob = ransac_prob,
                                                 ransac_threshold = ransac_threshold_px)
         
-        
+    
     async def get_position(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                            **kwargs) -> Tuple[GeoPoint, float]:
         pass
@@ -135,37 +140,21 @@ class MyOdometry(MovementSensor, Reconfigurable):
                            **kwargs) -> Mapping[str, float]:
         pass
 
-    # @staticmethod
-    # def get_camera_matrix_from_properties(props: Camera.Properties):
-    #     fx = props.intrinsic_parameters.focal_x_px
-    #     fy = props.intrinsic_parameters.focal_y_px
-    #     ppx = props.intrinsic_parameters.center_x_px
-    #     ppy = props.intrinsic_parameters.center_y_px
-    #     return get_camera_matrix(fx, fy, ppx, ppy)
-    
-    # # @staticmethod
-    # def get_distortion_parameters_from_properties(props: Camera.Properties):
-    #     # rk1 = props.distortion_parameters.
-    #     rk1 = -0.16210
-    #     rk2 = 0.13632
-    #     rk3 = -0.03443
-    #     tp1 = 0.01364798
-    #     tp2 = -0.0107569
-    #     return utils.get_distort_param(rk1, rk2, rk3, tp1, tp2)
-
     @staticmethod
-    def get_distortion_parameters():
-        rk1 = -0.16210
-        rk2 = 0.13632
-        rk3 = -0.03443
-        tp1 = 0.01364798
-        tp2 = -0.0107569
-        return get_distort_param(rk1, rk2, rk3, tp1, tp2)
-
-    @staticmethod
-    def get_camera_matrix():
-        fx = 1407.16*(720/960)
-        fy = 1359.84*(1280/1440)
-        ppx = 595.26*(720/960)
-        ppy = 658.18*(1280/1440)
+    def get_camera_matrix_from_properties(props: Camera.Properties):
+        fx = props.intrinsic_parameters.focal_x_px
+        fy = props.intrinsic_parameters.focal_y_px
+        ppx = props.intrinsic_parameters.center_x_px
+        ppy = props.intrinsic_parameters.center_y_px
         return get_camera_matrix(fx, fy, ppx, ppy)
+    
+    @staticmethod
+    def get_distortion_parameters_from_properties(props: Camera.Properties):
+        distorion_param= props.distortion_parameters
+        rk1 =distorion_param.parameters[0]
+        rk2 = distorion_param.parameters[1]
+        rk3 = distorion_param.parameters[2]
+        tp1 = distorion_param.parameters[3]
+        tp2 = distorion_param.parameters[4]
+        return get_distort_param(rk1, rk2, rk3, tp1, tp2)
+    
