@@ -16,6 +16,10 @@ from viam.resource.types import Model, ModelFamily
 from .visual_odometry import ORBVisualOdometry
 from .utils import get_camera_matrix, get_distort_param
 import asyncio
+from viam.logging import getLogger
+
+LOGGER = getLogger(__name__)
+
 
 class MyOdometry(MovementSensor, Reconfigurable):
     MODEL: ClassVar[Model] = Model(ModelFamily("viam", "opencv"), "visual_odometry_orb")
@@ -37,7 +41,7 @@ class MyOdometry(MovementSensor, Reconfigurable):
         '''
         camera_name = config.attributes.fields["camera_name"].string_value
         if camera_name == "":
-            raise Exception("A 'camera_name' attribute is required for visual odometry movement sensor")
+            LOGGER.error("A 'camera_name' attribute is required for visual odometry movement sensor")
         return [camera_name]
     
     def reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
@@ -47,14 +51,9 @@ class MyOdometry(MovementSensor, Reconfigurable):
     async def _reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
         camera_name = config.attributes.fields["camera_name"].string_value
         camera = dependencies[Camera.get_resource_name(camera_name)]
-        
-        # distortion_parameters = self.get_distortion_parameters_from_properties(props)
         props = await camera.get_properties()
         camera_matrix = self.get_camera_matrix_from_properties(props)
-        print(f"camera matyrix si {camera_matrix}")
         distortion_parameters = self.get_distortion_parameters_from_properties(props)
-        print(f"PROPS are {props}")
-        print(f"Type of props sis {type(props)}")
         def get_attribute_from_config(attribute_name:str,  default):
             if attribute_name not in config.attributes.fields:
                 return default

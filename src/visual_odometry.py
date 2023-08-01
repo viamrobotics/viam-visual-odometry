@@ -4,6 +4,7 @@ from collections import deque
 import numpy as np
 import cv2
 from PIL import Image
+from viam.logging import getLogger
 from scipy.spatial.transform import Rotation
 from viam.components.camera import Camera
 from time import time
@@ -15,7 +16,7 @@ from .motion import Transition, Motion
 
 
 
-
+LOGGER = getLogger(__name__)
 
 class ORBVisualOdometry(object):
     def __init__(self,
@@ -94,13 +95,13 @@ class ORBVisualOdometry(object):
         self.running = False
 
     def run_odometry_loop(self):
+        LOGGER.info("STARTING ODOMETRY LOOP")
         asyncio.create_task(self.orb_visual_odometry())
         self.running = True
         
         
     def check_start(self):
         if not self.running:
-            print("running odometry loop")
             self.run_odometry_loop()
             
     async def get_current_transition_values(self):
@@ -119,11 +120,10 @@ class ORBVisualOdometry(object):
             try:
                 matches, old_matches, cur_matches = self.get_matches()
             except:
-                #TODO:....
-                print(f"Can't find matches, check ORB parameters. Skipping images.")
+                LOGGER.warn("Can't find matches, check ORB parameters. Skipping images.")
                 continue
             if len(matches)<100:
-                print(f"Not enough matches to be trustworthy. Skipping images.")
+                LOGGER.warn("Not enough matches to be trustworthy. Skipping images.")
                 continue
             
             try:
@@ -136,11 +136,9 @@ class ORBVisualOdometry(object):
                     self.motion.append(trans)
                 
             except cv2.error as e:
-                print(f"Couldn't recover essential matrix or pose from essential matrix, got {e}")
+                LOGGER.error(f"Couldn't recover essential matrix or pose from essential matrix, got {e}")
                 continue 
-            
-            
-            # R, t, dt = await self.get_current_transition_values()
+        
             
             if self.debug:
                 R, t, dt = await self.get_odometry_values()
@@ -176,7 +174,7 @@ class ORBVisualOdometry(object):
         if self.matcher_type == "flann":
             matches = self.flann.knnMatch(self.memory.last.p_descriptors,self.memory.current.p_descriptors,k=2)
             if self.debug:
-                print(f"number of matches before ration test is {len(matches)}")
+                LOGGER.info(f"number of matches before ration test is {len(matches)}")
             good_matches = []
             ##Do Lowe's ratio test
             for m, n in matches:
@@ -184,7 +182,7 @@ class ORBVisualOdometry(object):
                     good_matches.append(m) 
                     
             if self.debug:
-                print(f"number of good_matches after ration test is {len(good_matches)}")
+                LOGGER.info(f"number of good_matches after ration test is {len(good_matches)}")
                 
             old_matches = np.array([self.memory.last.p[mat.queryIdx].pt for mat in good_matches])
             cur_matches = np.array([self.memory.current.p[mat.trainIdx].pt for mat in good_matches])
@@ -218,7 +216,6 @@ class ORBVisualOdometry(object):
         
         
     def get_essential_matrix(self, old_matches, cur_matches):
-        # 
         E, mask_e, = cv2.findEssentialMat(old_matches, cur_matches, cameraMatrix=self.camera_matrix,
                                          method=cv2.RANSAC, prob=self.ransac_prob,threshold = self.ransac_threshold)
         return E, mask_e
