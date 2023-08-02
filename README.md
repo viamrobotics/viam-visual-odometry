@@ -6,15 +6,15 @@
 ## Getting started
 All you need is a calibrated camera.
 
-This module implements two methods [movement sensor API](https://docs.viam.com/components/movement-sensor/#api):
-  * `GetLinearVelocity`
-  * `GetAngularVelocity`
+This module implements two methods of the [movement sensor API](https://docs.viam.com/components/movement-sensor/#api):
+  * `GetLinearVelocity()`
+  * `GetAngularVelocity()`
 
 
-Please note that GetLinearVelocity returns an estimation of the instantaneous linear velocity **without scale factor**. Hence, units should not be trusted and GetLinearVelocity should serve as direction estimation.
+Please note that GetLinearVelocity returns an estimation of the instantaneous linear velocity **without scale factor**. Hence, units should not be trusted and `GetLinearVelocity()` should serve as direction estimation.
 
 ## Config
-### Sample config 
+### Example config 
 ```json
 {
   "modules": [
@@ -31,7 +31,19 @@ Please note that GetLinearVelocity returns an estimation of the instantaneous li
       "attributes": {
         "height_px": 720,
         "width_px": 1280,
-        "video_path": ""
+        "intrinsic_parameters": {
+          "ppx": 446,
+          "ppy": 585,
+          "fx": 1055,
+          "fy": 1209
+        },
+        "distortion_parameters": {
+          "rk3": -0.03443,
+          "tp1": 0.01364798,
+          "tp2": -0.0107569,
+          "rk1": -0.1621,
+          "rk2": 0.13632
+        }
       },
       "depends_on": []
     },
@@ -39,7 +51,9 @@ Please note that GetLinearVelocity returns an estimation of the instantaneous li
       "namespace": "rdk",
       "model": "viam:opencv:visual_odometry_orb",
       "attributes": {
-        "camera_name": "cam"
+        "camera_name": "cam", 
+        "time_between_frames_s": 0.2, 
+        "lowe_ratio_threshold": 0.75,
       },
       "depends_on": [],
       "name": "visual_odometry1",
@@ -50,13 +64,15 @@ Please note that GetLinearVelocity returns an estimation of the instantaneous li
 
 ```
 
+The camera **needs** to have intrinsics parameters. You can follow these [instructions](https://github.com/viam-labs/camera-calibration/tree/main) to calibrate your camera.
+
 ### Parameters description
 The following attributes are available to configure your Visual odometry module:
 
 | Name | Type | Inclusion | Default | Description |
 | ---- | ---- | --------- | --------| ------------ |
 | `camera_name` | string | **Required** | | Camera name to be used for infering the motion. |
-| `time_between_frames_s` | float | Optional | `0.1` | Target time between two successive frames given in seconds. Depending on the inference time and the time to get an image, the sleeping time after each inference will be auto-tuned to reach this target. Also, if the time between two successive frame is 5x bigger than `time_between_frames_s`, another frame will be requested. |
+| `time_between_frames_s` | float | Optional | `0.1` | Target time between two successive frames given in seconds. Depending on the inference time and the time to get an image, the sleeping time after each inference will be auto-tuned to reach this target. Also, if the time between two successive frame is 5x bigger than `time_between_frames_s`, another frame will be requested. This value depends on the speed of your system.|
 |`orb_n_features`| int | Optional | `10000` | Maximum number of features to retain. |
 |`orb_edge_threshold`| int | Optional | `31` | Size of the border where the features are not detected. It should roughly match the patchSize parameter.  |
 |`orb_patch_size`| int | Optional | `31` | Size of the patch used by the oriented BRIEF descriptor.|
@@ -72,7 +88,26 @@ The following attributes are available to configure your Visual odometry module:
 
 See [ORB openCV documentation](https://docs.opencv.org/3.4/db/d95/classcv_1_1ORB.html) for more details.
 
-## Parameters contribution on computation time
+## Deeper dive
+
+The module works as follow:
+  1. Having a previous image with keypoints, request a new image. 
+  2. Detect ORB keypoints in the new image. 
+  3. Find matching keypoints in the two image using KNN or brute force matcher.
+  4. Filter matches (with Lowe's and RANSAC) and compute essential matrix.
+  5. Decompose essential matrix using cheirality constraints. 
+  6. Retrieve linear and angular velocities from the previous decomposition. 
+
+### Matcher
+
+### Filtering operations
+* If less than 100 matches 
+
+### Coordinate system orientation
+![](https://github.com/Rob1in/viam_visual_odometry/blob/main/img/coordinate_system.png)
+
+### Kinematics
+Angular velocity calculation from rotation matrix.
 
 ## References
 
