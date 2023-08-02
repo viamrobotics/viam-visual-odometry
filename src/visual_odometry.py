@@ -230,9 +230,7 @@ class ORBVisualOdometry(object):
         self.check_start()
         # R, t, dt = await self.get_current_transition_values()
         R, t, dt = await self.get_odometry_values()
-        phi, theta, psi = Rotation.from_matrix(R).as_euler(seq="XYZ", degrees=True)
-        if np.linalg.norm(np.array([phi, theta, psi]))>100:
-            return 0,0,0
+        phi, theta, psi = Rotation.from_matrix(R).as_euler(seq="ZXZ", degrees=True)
         return utils.euler_to_angular_rate(phi, theta, psi, dt)
         
 

@@ -95,19 +95,30 @@ The module works as follow:
   2. Detect ORB keypoints in the new image. 
   3. Find matching keypoints in the two image using KNN or brute force matcher.
   4. Filter matches (with Lowe's and RANSAC) and compute essential matrix.
-  5. Decompose essential matrix using cheirality constraints. 
+  5. Decompose essential matrix using cheirality constraint. 
   6. Retrieve linear and angular velocities from the previous decomposition. 
 
 ### Matcher
 
 ### Filtering operations
-* If less than 100 matches 
+### Coordinate system
+The coordinate system used is as follows.
+X is pointing to the left of the camera, Y down, and Z forward.
+<p align="center">
+ <img src="https://github.com/Rob1in/viam-visual-odometry/blob/main/img/coordinate_system.png" width=35%, height=35%>
+ </p>
 
-### Coordinate system orientation
-![](https://github.com/Rob1in/viam_visual_odometry/blob/main/img/coordinate_system.png)
+### Angular velocity calculation from rotation matrix
 
-### Kinematics
-Angular velocity calculation from rotation matrix.
+From the rotation matrix, we first compute the Euler angles as the serie of [intrinsic rotations](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.as_euler.html) (= attached to the moving body) $ZXZ$, giving angles $\phi$,  $\theta$ and $\psi$.\
+\
+Angular velocities about the **final** $x,y,z$ coor­dinate system is given by:
+
+$\omega_x = \dot{\phi} \sin\theta \sin\psi + \dot{\theta} \cos\psi$\
+$\omega_y = \dot{\phi} \sin\theta \cos\psi - \dot{\theta} \sin\psi$\
+$\omega_z = \dot{\phi} \cos\theta + \dot{\psi}$
+
+For more details see [here](https://ocw.mit.edu/courses/16-07-dynamics-fall-2009/resources/mit16_07f09_lec29/).
 
 ## References
 
