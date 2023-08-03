@@ -13,7 +13,7 @@ from viam.resource.base import ResourceBase
 from viam.module.types import Reconfigurable
 from viam.resource.types import Model, ModelFamily
 
-from .visual_odometry import ORBVisualOdometry
+from .odometry_module import ORBVisualOdometry
 from .utils import get_camera_matrix, get_distort_param
 import asyncio
 from viam.logging import getLogger
