@@ -101,7 +101,7 @@ class Odometry(MovementSensor, Reconfigurable):
     
     async def get_position(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                            **kwargs) -> Tuple[GeoPoint, float]:
-        pass
+        raise NotImplementedError
 
     async def get_linear_velocity(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                                   **kwargs) -> Vector3:
@@ -116,15 +116,15 @@ class Odometry(MovementSensor, Reconfigurable):
 
     async def get_linear_acceleration(self, *, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                                       **kwargs) -> Vector3:
-        pass
+        raise NotImplementedError
 
     async def get_compass_heading(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                                   **kwargs) -> float:
-        pass
+        raise NotImplementedError
 
     async def get_orientation(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                               **kwargs) -> Orientation:
-        pass
+        raise NotImplementedError
 
     async def get_properties(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                              **kwargs) -> MovementSensor.Properties:
@@ -137,7 +137,7 @@ class Odometry(MovementSensor, Reconfigurable):
 
     async def get_accuracy(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                            **kwargs) -> Mapping[str, float]:
-        pass
+        raise NotImplementedError
 
     @staticmethod
     def get_camera_matrix_from_properties(props: Camera.Properties):
