@@ -1,6 +1,6 @@
 # Visualization
 ## Saving results
-To save results, set `debug=True` to True in the arguments of  `ORBVisualOdometry` in `visual_odometry.py` file. 
+To save results, set `debug=True` in the `__init__()` of `ORBVisualOdometry` in `src/visual_odometry.py` file. 
 
 At each iteration (pair of images processed), this will save the updated position in the file `position.txt`. This will also save the pair of images as one image with a portion of the matches, coordinate system representation and current transition (translation and rotation between the two images).
 
@@ -10,7 +10,7 @@ At each iteration (pair of images processed), this will save the updated positio
 
 Run:
 ```
-python viz/visualization.py
+python3 viz/visualization.py
 ```
 to plot a bird's-eye view of the trajectory, matches and transition at each step. 
 This will also create a `trajectory.gif` like this one:
