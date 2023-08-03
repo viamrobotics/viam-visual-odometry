@@ -1,7 +1,7 @@
 import asyncio
 
 from viam.module.module import Module
-from .my_odometry import MyOdometry
+from .odometry_module import MyOdometry
 from viam.components.movement_sensor.movement_sensor import MovementSensor
 
 
