@@ -103,7 +103,7 @@ The module works as follow:
 ### Filtering operations
 ### Coordinate system
 The coordinate system used is as follows.
-X is pointing to the left of the camera, Y down, and Z forward.
+X is pointing to the right of the camera, Y down, and Z forward.
 <p align="center">
  <img src="https://github.com/Rob1in/viam-visual-odometry/blob/main/img/coordinate_system.png" width=35%, height=35%>
  </p>

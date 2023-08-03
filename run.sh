@@ -5,4 +5,4 @@ cd `dirname $0`
 # or handle forwarding termination signals manually
 # echo "Removing old debug files."
 # rm -r "results"/*
-exec python3.9 -m src.main $@
+exec python3 -m src.main $@

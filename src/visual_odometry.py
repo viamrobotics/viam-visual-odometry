@@ -14,8 +14,6 @@ from . import utils
 #from . import scale
 from .motion import Transition, Motion
 
-
-
 LOGGER = getLogger(__name__)
 
 class ORBVisualOdometry(object):
@@ -37,7 +35,7 @@ class ORBVisualOdometry(object):
                  ransac_prob:float, 
                  ransac_threshold:float,
                  window:int=5,
-                 debug:bool = False):
+                 debug:bool = True):
         
         self.cam = cam
         self.camera_matrix = camera_matrix
@@ -199,8 +197,8 @@ class ORBVisualOdometry(object):
         
         w_x, w_y, w_z = Rotation.from_matrix(R).as_euler(seq = "XYZ", degrees=True)
         v_x, v_y, v_z = t[0][0], t[1][0], t[2][0]
-        text_v = f" v_x: {round(v_x,2)}, v_y: {round(v_y,2)}, v_z: {round(v_z,2)}"
-        text_w = f" w_x: {round(w_x,2)}, w_y: {round(w_y,2)}, w_z: {round(w_z,2)}"
+        text_v = f" t_x: {round(v_x,2)}, t_y: {round(v_y,2)}, t_z: {round(v_z,2)}"
+        text_w = f" theta_x: {round(w_x,2)}, theta_y: {round(w_y,2)}, theta_z: {round(w_z,2)}"
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 1.0
         color = (0,0,0)  # black
@@ -212,7 +210,7 @@ class ORBVisualOdometry(object):
         cv2.putText(final_img, text_w, position_w, font, font_scale, color, thickness)
         final_img = utils.draw_perspective_axis(final_img)
         image = Image.fromarray(final_img)
-        image.save("./results/old" + str(self.memory.last.count) + ".jpg")
+        image.save("./results/match" + str(self.memory.last.count) + ".jpg")
         
         
     def get_essential_matrix(self, old_matches, cur_matches):

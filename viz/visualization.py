@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.colors import Normalize
 import cv2
 import os
 from PIL import Image
 import re
+import argparse
+
 
 def read_txt_file(filename):
     with open(filename, 'r') as file:
@@ -33,7 +34,8 @@ def plot_3d_points(arrays_list):
 
     plt.show()
 
-def plot_and_save_projection_XZ(arrays_list):
+def plot_and_save_projection_XZ(arrays_list, path_to_results_folder):
+    "save the sere"
     fig, ax = plt.subplots()
 
     # Extract X and Z coordinates from the arrays
@@ -53,32 +55,31 @@ def plot_and_save_projection_XZ(arrays_list):
         ax.set_xlabel('X Label')
         ax.set_ylabel('Z Label')
         plt.axis('equal')
-        plt.savefig(f"../results/traj_{int(id[i])}.jpg")
+        plt.savefig(path_to_results_folder + f"/traj_{int(id[i])}.jpg")
     # plt.show()
     return id
     
 
-def insert_trajectory_on_odometry(id):
+def insert_trajectory_on_odometry(id, path_to_results_folder):
     for i in id:
-        print(f"doing {i}")
         try:
-            pic = cv2.imread(f"/Users/robinin/visual_odometry/opencv_visual_odometry/results/old{int(i)}.jpg")
-            traj = cv2.imread(f"/Users/robinin/visual_odometry/opencv_visual_odometry/results/traj_{int(i)}.jpg")
+            matches = cv2.imread(path_to_results_folder+f"/match{int(i)}.jpg")
+            traj = cv2.imread(path_to_results_folder + f"/traj_{int(i)}.jpg")
         except:
             continue
         try:
-            height, width = pic.shape[:2]
+            height, width = matches.shape[:2]
             image2_resized = cv2.resize(traj, (width//4, height//2))
             # Get the dimensions of the first image
 
             # Get the dimensions of the second image (after resizing)
             h2, w2 = image2_resized.shape[:2]
             
-            # Insert the second image into the first imagew
-            pic[height-h2:height, width-w2:width] = image2_resized
+            # Insert the second image into the first image
+            matches[height-h2:height, width-w2:width] = image2_resized
 
             # Save the final combined image
-            cv2.imwrite(f"/Users/robinin/visual_odometry/opencv_visual_odometry/results/old{int(i)}.jpg", pic)  
+            cv2.imwrite( path_to_results_folder + f"/match{int(i)}.jpg", matches)  
         except:
             
             continue      
@@ -87,7 +88,7 @@ def insert_trajectory_on_odometry(id):
 def sort_jpeg_names(jpeg_files):
     def extract_numeric_part(filename):
         # Extract the numeric part 'n' from the filename
-        match = re.match(r'old(\d+)\.jpg', filename)
+        match = re.match(r'match(\d+)\.jpg', filename)
         if match:
             return int(match.group(1))
         
@@ -95,10 +96,9 @@ def sort_jpeg_names(jpeg_files):
 
     return sorted(jpeg_files, key=extract_numeric_part)
     
-def create_gif_from_jpegs(jpeg_folder, gif_filename, duration=100, loop=0, prefix_filter="old", images_to_skip=5, reduce_factor=2):
+def create_gif_from_jpegs(jpeg_folder, gif_filename, duration=100, loop=0, prefix_filter="match", images_to_skip=3, reduce_factor=2):
     jpeg_files = [file for file in os.listdir(jpeg_folder) if ((file.lower().endswith('.jpg') or file.lower().endswith('.jpeg')) and file.lower().startswith(prefix_filter))]
     jpeg_files = sort_jpeg_names(jpeg_files=jpeg_files)
-    print(jpeg_files)
 
     if not jpeg_files:
         raise ValueError(f"No JPEG files found in the specified folder with names starting with '{prefix_filter}'.")
@@ -114,29 +114,23 @@ def create_gif_from_jpegs(jpeg_folder, gif_filename, duration=100, loop=0, prefi
             images.append(resized_image)
 
     # Save the images as a GIF
-    images[0].save(gif_filename, save_all=True, append_images=images[1:], duration=duration, loop=loop)
+    images[0].save(jpeg_folder+"/"+gif_filename, save_all=True, append_images=images[1:], duration=duration, loop=loop)
 
 
 
 if __name__ == "__main__":
-    # txt_file = "../results/position.txt"  # Replace with the name of your txt file
-    # arrays = read_txt_file(txt_file)
-    # # plot_3d_points(arrays)
-    # id = plot_and_save_projection_XZ(arrays)
-    # insert_trajectory_on_odometry(id)
-    
-    
-    # Create gif
-    input_folder = "../results"
-    output_gif = "../results/trajectory.gif"
-    frame_duration = 100  # In milliseconds (100ms = 0.1 seconds)
-    loop_count = 0  # 0 means infinite loop, otherwise provide a positive integer for the loop count
+    parser = argparse.ArgumentParser(description="Create gif from JPEG images.")
+    parser.add_argument("--input_folder", type=str, default="./results", help="Path to the folder containing JPEG images and positions file.")
+    parser.add_argument("--input_position_file", type=str, default="position.txt", help="Path to .txt storing poses")
+    parser.add_argument("--output_gif_file", type=str, default="trajectory.gif", help="Path to the output gif file.")
+    parser.add_argument("--frame_duration", type=int, default=100, help="Duration of each frame in milliseconds.")
+    parser.add_argument("--loop_count", type=int, default=0, help="Number of loops for the gif (0 for infinite loop).")
+    args = parser.parse_args()
+    position_file = args.input_folder + "/" + args.input_position_file
+    arrays = read_txt_file(position_file)
+    # plot_3d_points(arrays)
+    ids = plot_and_save_projection_XZ(arrays, args.input_folder)
+    insert_trajectory_on_odometry(ids, args.input_folder)
 
-    create_gif_from_jpegs(input_folder, output_gif, duration=frame_duration, loop=loop_count)
+    create_gif_from_jpegs(args.input_folder, args.output_gif_file, duration=args.frame_duration, loop=args.loop_count)
     
-    
-    
-    
-
-
-
