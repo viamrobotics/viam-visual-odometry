@@ -119,10 +119,10 @@ def create_gif_from_jpegs(jpeg_folder, gif_filename, duration=100, loop=0, prefi
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Create gif from JPEG images.")
+    parser = argparse.ArgumentParser(description="Process position.txt. Plot bird's-eye view of the trajectory. Show matches for each pair of images. Create gif from JPEG images.")
     parser.add_argument("--input_folder", type=str, default="./results", help="Path to the folder containing JPEG images and positions file.")
-    parser.add_argument("--input_position_file", type=str, default="position.txt", help="Path to .txt storing poses")
-    parser.add_argument("--output_gif_file", type=str, default="trajectory.gif", help="Path to the output gif file.")
+    parser.add_argument("--input_position_file", type=str, default="position.txt", help="Name of the .txt storing positions in the input folder.")
+    parser.add_argument("--output_gif_file", type=str, default="trajectory.gif", help="Name of the output gif file.")
     parser.add_argument("--frame_duration", type=int, default=100, help="Duration of each frame in milliseconds.")
     parser.add_argument("--loop_count", type=int, default=0, help="Number of loops for the gif (0 for infinite loop).")
     args = parser.parse_args()

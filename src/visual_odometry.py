@@ -35,7 +35,7 @@ class ORBVisualOdometry(object):
                  ransac_prob:float, 
                  ransac_threshold:float,
                  window:int=5,
-                 debug:bool = True):
+                 debug:bool = False):
         
         self.cam = cam
         self.camera_matrix = camera_matrix
