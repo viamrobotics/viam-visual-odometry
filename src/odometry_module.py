@@ -13,7 +13,7 @@ from viam.resource.base import ResourceBase
 from viam.module.types import Reconfigurable
 from viam.resource.types import Model, ModelFamily
 
-from .odometry_module import ORBVisualOdometry
+from .visual_odometry import ORBVisualOdometry
 from .utils import get_camera_matrix, get_distort_param
 import asyncio
 from viam.logging import getLogger
@@ -21,7 +21,7 @@ from viam.logging import getLogger
 LOGGER = getLogger(__name__)
 
 
-class MyOdometry(MovementSensor, Reconfigurable):
+class Odometry(MovementSensor, Reconfigurable):
     MODEL: ClassVar[Model] = Model(ModelFamily("viam", "opencv"), "visual_odometry_orb")
     # cam: Camera
     visual_odometry: ORBVisualOdometry

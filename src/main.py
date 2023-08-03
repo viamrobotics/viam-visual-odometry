@@ -1,7 +1,7 @@
 import asyncio
 
 from viam.module.module import Module
-from .odometry_module import MyOdometry
+from .odometry_module import Odometry
 from viam.components.movement_sensor.movement_sensor import MovementSensor
 
 
@@ -11,7 +11,7 @@ async def main():
     """
 
     module = Module.from_args()
-    module.add_model_from_registry(MovementSensor.SUBTYPE, MyOdometry.MODEL)
+    module.add_model_from_registry(MovementSensor.SUBTYPE, Odometry.MODEL)
     await module.start()
 
 
