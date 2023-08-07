@@ -77,7 +77,7 @@ The following attributes are available to configure your Visual odometry module:
 |`orb_edge_threshold`| int | Optional | `31` | Size of the border where the features are not detected. It should roughly match the patchSize parameter.  |
 |`orb_patch_size`| int | Optional | `31` | Size of the patch used by the oriented BRIEF descriptor.|
 |`orb_n_levels`| int | Optional | `8` |Number of pyramid levels.|
-|`orb_first_level`| float | Optional | `0` |Level of pyramid to put source image to.|
+|`orb_first_level`| int | Optional | `0` |Level of pyramid to put source image to.|
 |`orb_fast_threshold`| int | Optional | `20` | Fast threshold. |
 |`orb_scale_factor`| float | Optional | `1.2` | Pyramid decimation ratio, greater than 1. |
 |`orb_WTA_K`| int | Optional | `2` | Number of points that produce each element of the oriented BRIEF descriptor. |
