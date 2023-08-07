@@ -95,7 +95,7 @@ The module works as follow:
   2. Detect ORB keypoints in the new image. 
   3. Find matching keypoints in the two image using KNN or brute force matcher.
   4. Filter matches (with Lowe's and RANSAC) and compute essential matrix.
-  5. Decompose essential matrix using cheirality constraint. 
+  5. Decompose essential matrix using chirality constraint. 
   6. Retrieve linear and angular velocities from the previous decomposition. 
 
 ### Matcher
