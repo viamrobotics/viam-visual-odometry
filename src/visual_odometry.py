@@ -1,4 +1,3 @@
-import math
 import time
 from collections import deque
 import numpy as np
@@ -17,6 +16,13 @@ from .motion import Transition, Motion
 LOGGER = getLogger(__name__)
 
 class ORBVisualOdometry(object):
+    """
+    This class has two jobs. 
+     * One coroutine requests images from the camera
+    and compute relative transitions between two images. 
+     * One coroutine access the transition computed by the first coroutine and
+     convert it to either a linear velocity or angular velocity. 
+    """    
     def __init__(self,
                  cam: Camera,
                  camera_matrix,
@@ -71,7 +77,7 @@ class ORBVisualOdometry(object):
         if matcher == "BF":
             self.matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
         
-        if matcher == "flann":
+        else:
             
             FLANN_INDEX_LSH = 6
             
@@ -142,10 +148,11 @@ class ORBVisualOdometry(object):
                 R, t, dt = await self.get_odometry_values()
                 
                 self.position += self.orientation.dot(t)
-                self.orientation = np.dot(self.orientation, R) ##ici il faut peut etre transposer R mais peut etre pas a cause de l'ordre de la multiplication 
+                self.orientation = np.dot(self.orientation, R)
                 log_pos = np.concatenate((np.array([self.memory.last.count]), self.position.flatten()), axis=0)
                 utils.save_numpy_array_to_file_on_new_line(log_pos.flatten().round(3), "./results/position.txt")
                 self.draw_matches_and_write_results(matches, R, t, dt)
+                utils.draw_matches_and_write_results(self.memory.last, self.memory.current, matches,R, t)
                 
             if not self.debug:
                 _, _ , dt = await self.get_odometry_values()
@@ -158,13 +165,10 @@ class ORBVisualOdometry(object):
     def get_keypoints(self):
         self.memory.current.get_keypoints(self.orb)
         self.memory.last.get_keypoints(self.orb)
-
         
     def get_matches(self):
         if self.matcher_type == "BF":
             matches = self.matcher.match(self.memory.last.p_descriptors, self.memory.current.p_descriptors)
-            # matches = sorted(matches, key=lambda x: x.distance)  # faire en sorte de pas en avoir beaucoup
-
             old_matches = np.array([self.memory.last.p[mat.queryIdx].pt for mat in matches])
             cur_matches = np.array([self.memory.current.p[mat.trainIdx].pt for mat in matches])
             return matches, old_matches, cur_matches
@@ -187,32 +191,6 @@ class ORBVisualOdometry(object):
             return good_matches, old_matches, cur_matches
         
         
-        
-    def draw_matches_and_write_results(self, matches, R, t, dt):
-        final_img = cv2.drawMatches(self.memory.last.frame, self.memory.last.p,
-                                    self.memory.current.frame, self.memory.current.p,
-                                    matches[:200],
-                                    None,
-                                    flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
-        
-        w_x, w_y, w_z = Rotation.from_matrix(R).as_euler(seq = "XYZ", degrees=True)
-        v_x, v_y, v_z = t[0][0], t[1][0], t[2][0]
-        text_v = f" t_x: {round(v_x,2)}, t_y: {round(v_y,2)}, t_z: {round(v_z,2)}"
-        text_w = f" theta_x: {round(w_x,2)}, theta_y: {round(w_y,2)}, theta_z: {round(w_z,2)}"
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 1.0
-        color = (0,0,0)  # black
-        thickness = 4
-
-        position_v = (100, 50)  # (x, y) coordinates
-        position_w = (100, 85)
-        cv2.putText(final_img, text_v, position_v, font, font_scale, color, thickness)
-        cv2.putText(final_img, text_w, position_w, font, font_scale, color, thickness)
-        final_img = utils.draw_perspective_axis(final_img)
-        image = Image.fromarray(final_img)
-        image.save("./results/match" + str(self.memory.last.count) + ".jpg")
-        
-        
     def get_essential_matrix(self, old_matches, cur_matches):
         E, mask_e, = cv2.findEssentialMat(old_matches, cur_matches, cameraMatrix=self.camera_matrix,
                                          method=cv2.RANSAC, prob=self.ransac_prob,threshold = self.ransac_threshold)
@@ -226,7 +204,6 @@ class ORBVisualOdometry(object):
     
     async def get_angular_velocity(self):
         self.check_start()
-        # R, t, dt = await self.get_current_transition_values()
         R, t, dt = await self.get_odometry_values()
         phi, theta, psi = Rotation.from_matrix(R).as_euler(seq="ZXZ", degrees=True)
         return utils.euler_to_angular_rate(phi, theta, psi, dt)
@@ -248,7 +225,7 @@ class ORBVisualOdometry(object):
         
         #check if the last image is too old so it's unlikely to find matching points
         dt =self.memory.current.time - self.memory.last.time 
-        if self.memory.current.time - self.memory.last.time > self.time_between_frames_s*5:
+        if dt > self.time_between_frames_s*5:
             await asyncio.sleep(self.time_between_frames_s) #maybe
             self.memory.append(await self.get_state())
 

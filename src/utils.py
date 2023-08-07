@@ -4,7 +4,6 @@ import cv2
 import math
 from PIL import Image
 
-
 def get_camera_matrix(focal_length_x, focal_length_y, principal_point_x, principal_point_y):
     camera_matrix = np.array([[focal_length_x, 0, principal_point_x],
                               [0, focal_length_y, principal_point_y],
@@ -131,7 +130,29 @@ def rotation_matrix_to_euler_smallest_norm(matrix):
 
     return euler_angles_smallest_norm, seq
 
+def draw_matches_and_write_results(last, current, matches, R, t):
+        final_img = cv2.drawMatches(last.frame, last.p,
+                                    current.frame, current.p,
+                                    matches[:200],
+                                    None,
+                                    flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
+        
+        w_x, w_y, w_z = Rotation.from_matrix(R).as_euler(seq = "XYZ", degrees=True)
+        v_x, v_y, v_z = t[0][0], t[1][0], t[2][0]
+        text_v = f" t_x: {round(v_x,2)}, t_y: {round(v_y,2)}, t_z: {round(v_z,2)}"
+        text_w = f" theta_x: {round(w_x,2)}, theta_y: {round(w_y,2)}, theta_z: {round(w_z,2)}"
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 1.0
+        color = (0,0,0)  # black
+        thickness = 4
 
+        position_v = (100, 50)  # (x, y) coordinates
+        position_w = (100, 85)
+        cv2.putText(final_img, text_v, position_v, font, font_scale, color, thickness)
+        cv2.putText(final_img, text_w, position_w, font, font_scale, color, thickness)
+        final_img = draw_perspective_axis(final_img)
+        image = Image.fromarray(final_img)
+        image.save("./results/match" + str(last.count) + ".jpg")
 
 
 def save_numpy_array_to_file_on_new_line(array, file_path):
