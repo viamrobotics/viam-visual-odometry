@@ -49,7 +49,7 @@ Please note that GetLinearVelocity returns an estimation of the instantaneous li
     },
     {
       "namespace": "rdk",
-      "model": "viam:opencv:visual_odometry_orb",
+      "model": "viam:visual_odometry:opencv_orb",
       "attributes": {
         "camera_name": "cam", 
         "time_between_frames_s": 0.2, 

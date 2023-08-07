@@ -22,7 +22,7 @@ LOGGER = getLogger(__name__)
 
 
 class Odometry(MovementSensor, Reconfigurable):
-    MODEL: ClassVar[Model] = Model(ModelFamily("viam", "opencv"), "visual_odometry_orb")
+    MODEL: ClassVar[Model] = Model(ModelFamily("viam", "visual_odometry"), "opencv_orb")
     # cam: Camera
     visual_odometry: ORBVisualOdometry
 
