@@ -1,7 +1,7 @@
 # Monocular Visual Odometry
 [Viam module](https://docs.viam.com/extend/modular-resources/) for monocular visual odometry implemented as a movement sensor.
 
-![](https://github.com/Rob1in/viam_visual_odometry/blob/main/img/trajectory.gif)
+![https://github.com/Rob1in/viam_visual_odometry/blob/main/img/trajectory.gif](https://github.com/viamrobotics/viam-visual-odometry/blob/main/img/trajectory.gif?raw=true)
 
 ## Getting started
 All you need is a calibrated camera.
