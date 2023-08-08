@@ -8,6 +8,7 @@ from scipy.spatial.transform import Rotation
 from viam.components.camera import Camera
 from time import time
 import asyncio
+from viam.media.video import CameraMimeType
 
 from . import utils
 #from . import scale
@@ -42,7 +43,6 @@ class ORBVisualOdometry(object):
                  ransac_threshold:float,
                  window:int=5,
                  debug:bool = False):
-        
         self.cam = cam
         self.camera_matrix = camera_matrix
         self.distort_param = distortion_param
@@ -234,7 +234,7 @@ class ORBVisualOdometry(object):
         self.count +=1
         res = State(count=self.count)
         res.time = time()
-        img = await self.cam.get_image()
+        img = await self.cam.get_image(mime_type=CameraMimeType.JPEG)
         if img is None:
             raise ValueError("The image is empty")
         

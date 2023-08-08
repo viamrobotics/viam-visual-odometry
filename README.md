@@ -12,6 +12,30 @@ This module implements two methods of the [movement sensor API](https://docs.via
 
 
 Please note that GetLinearVelocity returns an estimation of the instantaneous linear velocity **without scale factor**. Hence, units should not be trusted and `GetLinearVelocity()` should serve as direction estimation.
+### Installation
+#### Option 1: `poetry`
+
+```
+cd viam-visual-odometry
+poetry install
+```
+ In `run.sh`, uncomment the line:
+
+  ```
+  #exec poetry run python -m src.main $@
+  ```
+
+  and remove the line:
+  ```
+  exec python3 -m src.main $@
+  ```
+
+
+#### Option 2 : `pip install`
+
+```
+pip install -r requirements.txt
+```
 
 ## Config
 ### Example config 
