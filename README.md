@@ -19,7 +19,7 @@ Please note that GetLinearVelocity returns an estimation of the instantaneous li
 cd viam-visual-odometry
 poetry install
 ```
- In `run.sh` you can uncomment the line:
+ In `run.sh`, uncomment the line:
 
   ```
   #exec poetry run python -m src.main $@
