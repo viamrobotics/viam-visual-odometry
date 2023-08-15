@@ -39,6 +39,7 @@ class Odometry(MovementSensor, Reconfigurable):
         '''
         Returns the dependency
         '''
+        
         camera_name = config.attributes.fields["camera_name"].string_value
         if camera_name == "":
             LOGGER.error("A 'camera_name' attribute is required for visual odometry movement sensor")
