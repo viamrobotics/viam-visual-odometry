@@ -44,7 +44,8 @@ pip install -r requirements.txt
   "modules": [
     {
       "name": "my-odometry",
-      "executable_path": "/path/to/run.sh"
+      "executable_path": "/path/to/run.sh", 
+      "type" : "local"
     }
   ],
   "components": [
@@ -89,6 +90,19 @@ pip install -r requirements.txt
 ```
 
 The camera **needs** to have intrinsics parameters. You can follow these [instructions](https://github.com/viam-labs/camera-calibration/tree/main) to calibrate your camera.
+
+If you want to grab the module from the registry, change the `modules` field to:
+
+```json
+  "modules": [
+    {
+      "version": "^0.0.6",
+      "module_id": "viam:monocular-visual-odometry",
+      "name": "my-odometry",
+      "type": "registry"
+    }
+  ]
+```
 
 ### Parameters description
 The following attributes are available to configure your Visual odometry module:
