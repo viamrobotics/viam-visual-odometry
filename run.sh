@@ -1,20 +1,12 @@
-#!/bin/sh
-cd `dirname $0`
-venv_name="venv"
+#!/usr/bin/env bash
 
-# Check if the virtual environment exists
-if [ ! -d "$venv_name" ]; then
-    echo "Creating virtual environment for visual odometry..."
-    python3 -m venv "$venv_name"
-fi
+# bash safe mode. look at `set --help` to see what these are doing
+set -euxo pipefail
 
-# Activate the virtual environment
-source "$venv_name/bin/activate"
+cd $(dirname $0)
+source .env
+./setup.sh
 
-# Install requirements
-echo "Downloading dependencies for visual odometry..."
-pip install -r requirements.txt
-
-exec python3 -m src.main $@
-#exec python3.9 -m src.main $@
-#exec poetry run python -m src.main $@
+# Be sure to use `exec` so that termination signals reach the python process,
+# or handle forwarding termination signals manually
+exec $PYTHON -m src.main $@
