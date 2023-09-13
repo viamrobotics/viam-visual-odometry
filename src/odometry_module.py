@@ -130,12 +130,12 @@ class Odometry(MovementSensor, Reconfigurable):
         
         orientation = await self.visual_odometry.get_orientation()
         rot = Rotation.from_matrix(orientation)
-        q = rot.as_quat(rot)
-        ov = Quaternion.from_tuple((q[0], q[1], q[2], q[3])).to_orientation_vector()
-        return Orientation(o_x= ov.unit_sphere_vec.x, 
-                           o_y = ov.unit_sphere_vec.y, 
-                           o_z = ov.unit_sphere_vec.z, 
-                           theta=ov.theta)
+        euler_angles = rot.as_euler("XYZ", degrees = True)
+
+        return Orientation(o_x= 0, 
+                           o_y =0, 
+                           o_z = 0, 
+                           theta=euler_angles[1])
         
     async def get_properties(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                              **kwargs) -> MovementSensor.Properties:

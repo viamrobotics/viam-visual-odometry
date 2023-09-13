@@ -59,6 +59,7 @@ class ORBVisualOdometry(object):
         self.count = -1
         
         self.position = np.zeros((3,1))
+        self.orientation_lock = asyncio.Lock()
         self.orientation = np.eye(3).astype(np.float64)
 
 
@@ -135,6 +136,8 @@ class ORBVisualOdometry(object):
                 E, mask_e = self.get_essential_matrix(old_matches, cur_matches)
                 R, t = self.recover_pose(E, mask_e, old_matches, cur_matches)
                 R = utils.check_norm(R)
+                async with self.orientation_lock:
+                    self.orientation = np.dot(self.orientation, R)
                 async with self.motion.lock:
                     trans = Transition(R, t, self.memory.current.time - self.memory.last.time)
                     self.motion.append(trans)
@@ -146,7 +149,6 @@ class ORBVisualOdometry(object):
             
             if self.debug:
                 R, t, dt = await self.get_odometry_values()
-                
                 self.position += self.orientation.dot(t)
                 self.orientation = np.dot(self.orientation, R)
                 log_pos = np.concatenate((np.array([self.memory.last.count]), self.position.flatten()), axis=0)
@@ -217,8 +219,9 @@ class ORBVisualOdometry(object):
     
     async def get_orientation(self):
         self.check_start()
-        R, t, dt = await self.get_odometry_values()
-        return np.dot(self.orientation, R)
+        async with self.orientation_lock:
+            orientation = self.orientation
+        return orientation
                     
     async def update_states(self):
         self.memory.append(await self.get_state())
