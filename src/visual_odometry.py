@@ -215,7 +215,11 @@ class ORBVisualOdometry(object):
         # return t[0][0]/dt, t[1][0]/dt, t[2][0]/dt doesn't mean much more to divide by dt until having a scale
         return t[0][0], t[1][0], t[2][0]
     
-                
+    async def get_orientation(self):
+        self.check_start()
+        R, t, dt = await self.get_odometry_values()
+        return np.dot(self.orientation, R)
+                    
     async def update_states(self):
         self.memory.append(await self.get_state())
         if len(self.memory)<2:

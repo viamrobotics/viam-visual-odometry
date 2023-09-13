@@ -1,6 +1,7 @@
 from typing import ClassVar, Optional, Dict, Sequence, Any, Mapping, Tuple
 
 from typing_extensions import Self
+from scipy.spatial.transform import Rotation
 
 from viam.components.camera import Camera
 from viam.components.movement_sensor.movement_sensor import MovementSensor
@@ -17,6 +18,7 @@ from .visual_odometry import ORBVisualOdometry
 from .utils import get_camera_matrix, get_distort_param
 import asyncio
 from viam.logging import getLogger
+from .quat_ov import Quaternion
 
 LOGGER = getLogger(__name__)
 
@@ -125,13 +127,21 @@ class Odometry(MovementSensor, Reconfigurable):
 
     async def get_orientation(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                               **kwargs) -> Orientation:
-        raise NotImplementedError
-
+        
+        orientation = await self.visual_odometry.get_orientation()
+        rot = Rotation.from_matrix(orientation)
+        q = rot.as_quat(rot)
+        ov = Quaternion.from_tuple((q[0], q[1], q[2], q[3])).to_orientation_vector()
+        return Orientation(o_x= ov.unit_sphere_vec.x, 
+                           o_y = ov.unit_sphere_vec.y, 
+                           o_z = ov.unit_sphere_vec.z, 
+                           theta=ov.theta)
+        
     async def get_properties(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                              **kwargs) -> MovementSensor.Properties:
         return MovementSensor.Properties(linear_velocity_supported=True,
                                          angular_velocity_supported=True,
-                                         orientation_supported=False,
+                                         orientation_supported=True,
                                          position_supported=False,
                                          compass_heading_supported=False,
                                          linear_acceleration_supported=False)
