@@ -3,7 +3,7 @@
 
 ![https://github.com/Rob1in/viam_visual_odometry/blob/main/img/trajectory.gif](https://github.com/viamrobotics/viam-visual-odometry/blob/main/img/trajectory.gif?raw=true)
 
-## How to (Configure the Module)[https://docs.viam.com/components/movement-sensor/viam-visual-odometry/]
+## How to Configure the Module
 
 https://docs.viam.com/components/movement-sensor/viam-visual-odometry/
 
