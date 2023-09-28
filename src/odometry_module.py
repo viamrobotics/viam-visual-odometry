@@ -39,16 +39,16 @@ class Odometry(MovementSensor, Reconfigurable):
         '''
         Returns the dependency
         '''
-        
+
         camera_name = config.attributes.fields["camera_name"].string_value
         if camera_name == "":
             LOGGER.error("A 'camera_name' attribute is required for visual odometry movement sensor")
         return [camera_name]
-    
+
     def reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
         loop = asyncio.get_running_loop()
         loop.create_task(self._reconfigure(config, dependencies))
-    
+
     async def _reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
         camera_name = config.attributes.fields["camera_name"].string_value
         camera = dependencies[Camera.get_resource_name(camera_name)]
@@ -58,9 +58,9 @@ class Odometry(MovementSensor, Reconfigurable):
         def get_attribute_from_config(attribute_name:str,  default):
             if attribute_name not in config.attributes.fields:
                 return default
-            
+
             type_default = type(default)
-            
+
             if type_default == int:
                 return int(config.attributes.fields[attribute_name].number_value)
             elif type_default == float:
@@ -81,7 +81,7 @@ class Odometry(MovementSensor, Reconfigurable):
         lowe_ratio_threshold = get_attribute_from_config("lowe_ratio_threshold", .8)
         ransac_prob = get_attribute_from_config("ransac_prob", .99)
         ransac_threshold_px = get_attribute_from_config("ransac_threshold_px", .5)
-        
+
         self.visual_odometry = ORBVisualOdometry(cam= camera,
                                                 camera_matrix = camera_matrix,
                                                 time_between_frames = time_between_frames_s,
@@ -89,8 +89,8 @@ class Odometry(MovementSensor, Reconfigurable):
                                                 n_features = orb_n_features,
                                                 edge_threshold = orb_edge_threshold,
                                                 patch_size=orb_patch_size,
-                                                n_levels = orb_n_levels, 
-                                                first_level=orb_first_level, 
+                                                n_levels = orb_n_levels,
+                                                first_level=orb_first_level,
                                                 fast_threshold=orb_fast_threshold,
                                                 scale_factor=orb_scale_factor,
                                                 WTA_K=orb_WTA_K,
@@ -98,8 +98,8 @@ class Odometry(MovementSensor, Reconfigurable):
                                                 lowe_ratio_threshold = lowe_ratio_threshold,
                                                 ransac_prob = ransac_prob,
                                                 ransac_threshold = ransac_threshold_px)
-        
-    
+
+
     async def get_position(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                            **kwargs) -> Tuple[GeoPoint, float]:
         raise NotImplementedError
@@ -147,14 +147,17 @@ class Odometry(MovementSensor, Reconfigurable):
         ppx = props.intrinsic_parameters.center_x_px
         ppy = props.intrinsic_parameters.center_y_px
         return get_camera_matrix(fx, fy, ppx, ppy)
-    
+
     @staticmethod
     def get_distortion_parameters_from_properties(props: Camera.Properties):
-        distorion_param= props.distortion_parameters
-        rk1 =distorion_param.parameters[0]
-        rk2 = distorion_param.parameters[1]
-        rk3 = distorion_param.parameters[2]
-        tp1 = distorion_param.parameters[3]
-        tp2 = distorion_param.parameters[4]
-        return get_distort_param(rk1, rk2, rk3, tp1, tp2)
-    
+        # assuming brown_conrady parameters, fill as many as you can from
+        # distortion_param, and then fill the rest with 0
+        distortion_param = props.distortion_parameters
+        p = []
+        for i in range(5):
+            try:
+                p.append(distortion_param.parameters[i])
+            except:
+                p.append(0)
+        return get_distort_param(p[0], p[1], p[2], p[3], p[4])
+

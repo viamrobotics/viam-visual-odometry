@@ -3,7 +3,12 @@
 
 ![https://github.com/Rob1in/viam_visual_odometry/blob/main/img/trajectory.gif](https://github.com/viamrobotics/viam-visual-odometry/blob/main/img/trajectory.gif?raw=true)
 
+## How to (Configure the Module)[https://docs.viam.com/components/movement-sensor/viam-visual-odometry/]
+
+https://docs.viam.com/components/movement-sensor/viam-visual-odometry/
+
 ## Getting started
+
 All you need is a calibrated camera.
 
 This module implements two methods of the [movement sensor API](https://docs.viam.com/components/movement-sensor/#api):
