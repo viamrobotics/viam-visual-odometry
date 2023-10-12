@@ -127,7 +127,7 @@ class ORBVisualOdometry(object):
             except:
                 LOGGER.warn("Can't find matches, check ORB parameters. Skipping images.")
                 continue
-            if len(matches)<100:
+            if len(matches)<50:
                 LOGGER.warn("Not enough matches to be trustworthy. Skipping images.")
                 continue
             
@@ -158,6 +158,7 @@ class ORBVisualOdometry(object):
                 
             if not self.debug:
                 _, _ , dt = await self.get_odometry_values()
+                LOGGER.debug("TIME BETWEEN FRAMES IS DT: {dt}")
             #Auto-tune sleeping time with respect to the stream and inference speed
             self.sleep = max(self.sleep+ self.time_between_frames_s-dt,0)
     
