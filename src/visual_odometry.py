@@ -161,6 +161,7 @@ class ORBVisualOdometry(object):
                 LOGGER.debug(f"TIME BETWEEN FRAMES IS DT: {dt}")
             #Auto-tune sleeping time with respect to the stream and inference speed
             self.sleep = max(self.sleep+ self.time_between_frames_s-dt,0)
+            LOGGER.debug(f"sleep is : {self.sleep}")
     
             
             await asyncio.sleep(self.sleep)
