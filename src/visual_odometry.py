@@ -153,7 +153,6 @@ class ORBVisualOdometry(object):
                 self.orientation = np.dot(self.orientation, R)
                 log_pos = np.concatenate((np.array([self.memory.last.count]), self.position.flatten()), axis=0)
                 utils.save_numpy_array_to_file_on_new_line(log_pos.flatten().round(3), "./results/position.txt")
-                self.draw_matches_and_write_results(matches, R, t, dt)
                 utils.draw_matches_and_write_results(self.memory.last, self.memory.current, matches,R, t)
                 
             if not self.debug:
