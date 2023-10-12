@@ -235,7 +235,7 @@ class ORBVisualOdometry(object):
         #check if the last image is too old so it's unlikely to find matching points
         dt =self.memory.current.time - self.memory.last.time 
         if dt > self.time_between_frames_s*5:
-            await asyncio.sleep(self.time_between_frames_s) #maybe
+            LOGGER.debug("REACH THE OLD IMAGE ISSUE")
             self.memory.append(await self.get_state())
 
 
