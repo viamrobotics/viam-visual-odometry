@@ -158,7 +158,7 @@ class ORBVisualOdometry(object):
                 
             if not self.debug:
                 _, _ , dt = await self.get_odometry_values()
-                LOGGER.debug("TIME BETWEEN FRAMES IS DT: {dt}")
+                LOGGER.debug(f"TIME BETWEEN FRAMES IS DT: {dt}")
             #Auto-tune sleeping time with respect to the stream and inference speed
             self.sleep = max(self.sleep+ self.time_between_frames_s-dt,0)
     
