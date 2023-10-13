@@ -96,18 +96,20 @@ class ORBVisualOdometry(object):
         self.ransac_threshold = ransac_threshold
         self.debug = debug
         self.orientation = np.eye(3).astype(np.float64)
-        
         self.running = False
+        self.running_lock = asyncio.Lock()
 
     def run_odometry_loop(self):
         LOGGER.info("STARTING ODOMETRY LOOP")
         asyncio.create_task(self.orb_visual_odometry())
-        self.running = True
+
         
         
-    def check_start(self):
-        if not self.running:
-            self.run_odometry_loop()
+    async def check_start(self):
+        async with self.running_lock:
+            if not self.running:
+                self.running = True
+                self.run_odometry_loop()
             
     async def get_current_transition_values(self):
         return await self.motion.get_current_transition_values()
@@ -206,20 +208,20 @@ class ORBVisualOdometry(object):
         return R2, -R2.dot(t)
     
     async def get_angular_velocity(self):
-        self.check_start()
+        await self.check_start()
         R, t, dt = await self.get_odometry_values()
         phi, theta, psi = Rotation.from_matrix(R).as_euler(seq="ZXZ", degrees=True)
         return utils.euler_to_angular_rate(phi, theta, psi, dt)
         
 
     async def get_linear_velocity(self):
-        self.check_start()
+        await self.check_start()
         _, t, _ = await self.get_odometry_values()
         # return t[0][0]/dt, t[1][0]/dt, t[2][0]/dt doesn't mean much more to divide by dt until having a scale
         return t[0][0], t[1][0], t[2][0]
     
     async def get_orientation(self):
-        self.check_start()
+        await self.check_start()
         async with self.orientation_lock:
             orientation = self.orientation
         return orientation
@@ -251,21 +253,7 @@ class ORBVisualOdometry(object):
         open_cv_image = np.array(pil_image)
         res.frame = open_cv_image.copy()
         return res
-
-    # def get_pcds(self, R, t):
-    #     if self.old_pcd is None:
-    #         return scale.triangulate(), None
-        
-    #     new_pcd = scale.triangulate(R, t, self.memory.last.p, self.memory.current.p, self.camera_matrix)
-    #     if self.new_pcd is None:
-    #         pass
-            
-    # def get_scale(self):
-    #     if self.memory.last.count<2:
-    #         return 1
-    #     else:
-    #         pass
-        
+    
         
 class State(object):
 
