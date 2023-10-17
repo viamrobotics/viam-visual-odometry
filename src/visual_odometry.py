@@ -60,7 +60,6 @@ class ORBVisualOdometry(object):
         
         self.position = np.zeros((3,1))
         self.orientation_lock = asyncio.Lock()
-        self.orientation = np.eye(3).astype(np.float64)
 
 
         self.orb = cv2.ORB_create(nfeatures=n_features,
@@ -138,8 +137,15 @@ class ORBVisualOdometry(object):
                 E, mask_e = self.get_essential_matrix(old_matches, cur_matches)
                 R, t = self.recover_pose(E, mask_e, old_matches, cur_matches)
                 R = utils.check_norm(R)
+                ea = Rotation.from_matrix(R).as_euler("YZX", degrees = True)
+                # if abs(ea[0])>1:
+                #     LOGGER.debug(f" R VALUE IS Y {ea[0]}, Z is {ea[1]}, X is {ea[2]} ")
                 async with self.orientation_lock:
                     self.orientation = np.dot(self.orientation, R)
+                    rot = Rotation.from_matrix(self.orientation)
+                    euler_angles = rot.as_euler("YZX", degrees = True)
+                    LOGGER.debug(f"ORIENTATION AROUND Y IS {euler_angles[0]}")
+            
                 async with self.motion.lock:
                     trans = Transition(R, t, self.memory.current.time - self.memory.last.time)
                     self.motion.append(trans)
@@ -152,6 +158,7 @@ class ORBVisualOdometry(object):
             if self.debug:
                 R, t, dt = await self.get_odometry_values()
                 self.position += self.orientation.dot(t)
+                
                 self.orientation = np.dot(self.orientation, R)
                 log_pos = np.concatenate((np.array([self.memory.last.count]), self.position.flatten()), axis=0)
                 utils.save_numpy_array_to_file_on_new_line(log_pos.flatten().round(3), "./results/position.txt")
@@ -161,11 +168,11 @@ class ORBVisualOdometry(object):
                 _, _ , dt = await self.get_odometry_values()
                 LOGGER.debug(f"TIME BETWEEN FRAMES IS DT: {dt}")
             #Auto-tune sleeping time with respect to the stream and inference speed
-            self.sleep = max(self.sleep+ self.time_between_frames_s-dt,0)
+            # self.sleep = max(self.sleep+ self.time_between_frames_s-dt,0)
             LOGGER.debug(f"sleep is : {self.sleep}")
     
             
-            await asyncio.sleep(self.sleep)
+            # await asyncio.sleep(self.sleep)
 
     def get_keypoints(self):
         self.memory.current.get_keypoints(self.orb)
@@ -180,16 +187,16 @@ class ORBVisualOdometry(object):
         
         if self.matcher_type == "flann":
             matches = self.flann.knnMatch(self.memory.last.p_descriptors,self.memory.current.p_descriptors,k=2)
-            if self.debug:
-                LOGGER.info(f"number of matches before ration test is {len(matches)}")
+            # if self.debug:
+            LOGGER.info(f"number of matches before ration test is {len(matches)}")
             good_matches = []
             ##Do Lowe's ratio test
             for m, n in matches:
                 if m.distance < self.lowe_ratio_threshold * n.distance:
                     good_matches.append(m) 
                     
-            if self.debug:
-                LOGGER.info(f"number of good_matches after ration test is {len(good_matches)}")
+            # if self.debug:
+            LOGGER.info(f"number of good_matches after ration test is {len(good_matches)}")
                 
             old_matches = np.array([self.memory.last.p[mat.queryIdx].pt for mat in good_matches])
             cur_matches = np.array([self.memory.current.p[mat.trainIdx].pt for mat in good_matches])
