@@ -193,13 +193,18 @@ class ORBVisualOdometry(object):
             ##Do Lowe's ratio test
 
             # for m, n in matches:
+            
+            
             for match in matches:
-                try:
+                if len(match) == 2:
                     m, n = match
                     if m.distance < self.lowe_ratio_threshold * n.distance:
-                        good_matches.append(m) 
-                except ValueError as e:
-                    LOGGER.debug(f"match is {match} triggered: {e}")
+                        good_matches.append(m)
+                
+                elif len(match) ==1 :
+                    good_matches.append(match[0])
+                                
+                else:
                     continue
                 
                     
