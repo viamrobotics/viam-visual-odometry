@@ -125,8 +125,8 @@ class ORBVisualOdometry(object):
             self.get_keypoints()
             try:
                 matches, old_matches, cur_matches = self.get_matches()
-            except:
-                LOGGER.warn("Can't find matches, check ORB parameters. Skipping images.")
+            except ValueError as e:
+                LOGGER.warn(f"Can't find matches, check ORB parameters. Got {e} Skipping images.")
                 continue
             if len(matches)<50:
                 LOGGER.warn("Not enough matches to be trustworthy. Skipping images.")
@@ -138,8 +138,8 @@ class ORBVisualOdometry(object):
                 R, t = self.recover_pose(E, mask_e, old_matches, cur_matches)
                 R = utils.check_norm(R)
                 ea = Rotation.from_matrix(R).as_euler("YZX", degrees = True)
-                # if abs(ea[0])>1:
-                #     LOGGER.debug(f" R VALUE IS Y {ea[0]}, Z is {ea[1]}, X is {ea[2]} ")
+                if abs(ea[0])>1:
+                    LOGGER.debug(f" R VALUE IS Y {ea[0]}, Z is {ea[1]}, X is {ea[2]} ")
                 async with self.orientation_lock:
                     self.orientation = np.dot(self.orientation, R)
                     rot = Rotation.from_matrix(self.orientation)
@@ -188,15 +188,23 @@ class ORBVisualOdometry(object):
         if self.matcher_type == "flann":
             matches = self.flann.knnMatch(self.memory.last.p_descriptors,self.memory.current.p_descriptors,k=2)
             # if self.debug:
-            LOGGER.info(f"number of matches before ration test is {len(matches)}")
+            LOGGER.info(f"number of matches before ratio test is {len(matches)}")
             good_matches = []
             ##Do Lowe's ratio test
-            for m, n in matches:
-                if m.distance < self.lowe_ratio_threshold * n.distance:
-                    good_matches.append(m) 
+
+            # for m, n in matches:
+            for match in matches:
+                try:
+                    m, n = match
+                    if m.distance < self.lowe_ratio_threshold * n.distance:
+                        good_matches.append(m) 
+                except ValueError as e:
+                    LOGGER.debug(f"match is {match} triggered: {e}")
+                    continue
+                
                     
             # if self.debug:
-            LOGGER.info(f"number of good_matches after ration test is {len(good_matches)}")
+            LOGGER.info(f"number of good_matches after ratio test is {len(good_matches)}")
                 
             old_matches = np.array([self.memory.last.p[mat.queryIdx].pt for mat in good_matches])
             cur_matches = np.array([self.memory.current.p[mat.trainIdx].pt for mat in good_matches])
