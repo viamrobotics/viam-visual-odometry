@@ -202,7 +202,8 @@ class ORBVisualOdometry(object):
                         good_matches.append(m)
                 
                 elif len(match) ==1 :
-                    good_matches.append(match[0])
+                    continue
+                    # good_matches.append(match[0])
                                 
                 else:
                     continue
