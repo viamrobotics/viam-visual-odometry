@@ -168,9 +168,11 @@ def save_numpy_array_to_file_on_new_line(array, file_path):
 
 
 
-def check_norm(R):
-    phi, theta, psi = Rotation.from_matrix(R).as_euler(seq="XYZ", degrees=True)
-    if np.linalg.norm(np.array([phi, theta, psi]))>100:
-        return np.eye(3)
+def check_norm(R, threshold=100):
+    Y, Z, X = Rotation.from_matrix(R).as_euler(seq="YZX", degrees=True)
     
-    return R
+    norm = np.linalg.norm(np.array([Y, Z, X]))
+    if norm > threshold:
+        return np.eye(3), norm, Y, Z, X
+    
+    return R, norm, Y, Z, X

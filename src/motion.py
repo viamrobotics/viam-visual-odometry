@@ -26,7 +26,10 @@ class Motion(deque):
         
     @property    
     def current(self) -> Transition:
-        return self[-1]
+        if len(self)>0:
+            return self[-1]
+        else:
+            return Transition()
     
     @property
     def last(self)-> Transition:

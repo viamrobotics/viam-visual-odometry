@@ -52,6 +52,11 @@ class Odometry(MovementSensor, Reconfigurable):
         loop.create_task(self._reconfigure(config, dependencies))
     
     async def _reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
+        try:
+            self.visual_odometry.task.cancel()
+        except AttributeError as e:
+            LOGGER.error(e)
+        
         camera_name = config.attributes.fields["camera_name"].string_value
         camera = dependencies[Camera.get_resource_name(camera_name)]
         props = await camera.get_properties()

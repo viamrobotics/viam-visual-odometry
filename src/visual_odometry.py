@@ -98,10 +98,10 @@ class ORBVisualOdometry(object):
         self.running = False
         self.running_lock = asyncio.Lock()
 
+
     def run_odometry_loop(self):
         LOGGER.info("STARTING ODOMETRY LOOP")
-        asyncio.create_task(self.orb_visual_odometry())
-
+        self.task = asyncio.create_task(self.orb_visual_odometry())
         
         
     async def check_start(self):
@@ -126,8 +126,9 @@ class ORBVisualOdometry(object):
             try:
                 matches, old_matches, cur_matches = self.get_matches()
             except ValueError as e:
-                LOGGER.warn(f"Can't find matches, check ORB parameters. Got {e} Skipping images.")
+                LOGGER.warn(f"Can't find matches, check ORB parameters. Got error: {e} Skipping images.")
                 continue
+            
             if len(matches)<50:
                 LOGGER.warn("Not enough matches to be trustworthy. Skipping images.")
                 continue
@@ -136,23 +137,26 @@ class ORBVisualOdometry(object):
                 
                 E, mask_e = self.get_essential_matrix(old_matches, cur_matches)
                 R, t = self.recover_pose(E, mask_e, old_matches, cur_matches)
-                R = utils.check_norm(R)
-                ea = Rotation.from_matrix(R).as_euler("YZX", degrees = True)
-                if abs(ea[0])>1:
-                    LOGGER.debug(f" R VALUE IS Y {ea[0]}, Z is {ea[1]}, X is {ea[2]} ")
-                async with self.orientation_lock:
-                    self.orientation = np.dot(self.orientation, R)
-                    rot = Rotation.from_matrix(self.orientation)
-                    euler_angles = rot.as_euler("YZX", degrees = True)
-                    LOGGER.debug(f"ORIENTATION AROUND Y IS {euler_angles[0]}")
             
-                async with self.motion.lock:
-                    trans = Transition(R, t, self.memory.current.time - self.memory.last.time)
-                    self.motion.append(trans)
-                
             except cv2.error as e:
                 LOGGER.error(f"Couldn't recover essential matrix or pose from essential matrix, got {e}")
-                continue 
+                continue
+            
+            R, norm, _, _, _ = utils.check_norm(R, 100)
+            if norm>100:
+                async with self.motion.lock:
+                    R = self.motion.current.R
+
+            async with self.orientation_lock:
+                self.orientation = np.dot(self.orientation, R)
+                # rot = Rotation.from_matrix(self.orientation)
+                # euler_angles = rot.as_euler("YZX", degrees = True)
+                # LOGGER.debug(f"ORIENTATION AROUND Y IS {euler_angles[0]}")
+        
+            async with self.motion.lock:
+                trans = Transition(R, t, self.memory.current.time - self.memory.last.time)
+                self.motion.append(trans)
+
         
             
             if self.debug:
@@ -202,8 +206,8 @@ class ORBVisualOdometry(object):
                         good_matches.append(m)
                 
                 elif len(match) ==1 :
-                    continue
-                    # good_matches.append(match[0])
+                    # continue
+                    good_matches.append(match[0])
                                 
                 else:
                     continue
