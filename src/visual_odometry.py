@@ -42,7 +42,7 @@ class ORBVisualOdometry(object):
                  ransac_prob:float, 
                  ransac_threshold:float,
                  window:int=5,
-                 debug:bool = False):
+                 debug:bool = True):
         self.cam = cam
         self.camera_matrix = camera_matrix
         self.distort_param = distortion_param
@@ -57,6 +57,9 @@ class ORBVisualOdometry(object):
         self.dt = 0
         
         self.count = -1
+        self.count_failed_matches = 0
+        self.count_cv2_error = 0
+        self.norm_big = 0
         
         self.position = np.zeros((3,1))
         self.orientation_lock = asyncio.Lock()
@@ -119,63 +122,82 @@ class ORBVisualOdometry(object):
         return R, t, dt 
 
     async def orb_visual_odometry(self):
-        
         while True:
             await self.update_states()
             self.get_keypoints()
-            try:
-                matches, old_matches, cur_matches = self.get_matches()
-            except ValueError as e:
-                LOGGER.warn(f"Can't find matches, check ORB parameters. Got error: {e} Skipping images.")
-                continue
+
+            matches, old_matches, cur_matches = self.get_matches()
             
             if len(matches)<50:
+                self.count_failed_matches +=1
                 LOGGER.warn("Not enough matches to be trustworthy. Skipping images.")
-                continue
-            
-            try:
-                
-                E, mask_e = self.get_essential_matrix(old_matches, cur_matches)
-                R, t = self.recover_pose(E, mask_e, old_matches, cur_matches)
-            
-            except cv2.error as e:
-                LOGGER.error(f"Couldn't recover essential matrix or pose from essential matrix, got {e}")
-                continue
-            
-            R, norm, _, _, _ = utils.check_norm(R, 100)
-            if norm>100:
                 async with self.motion.lock:
-                    R = self.motion.current.R
-
-            async with self.orientation_lock:
-                self.orientation = np.dot(self.orientation, R)
-                # rot = Rotation.from_matrix(self.orientation)
-                # euler_angles = rot.as_euler("YZX", degrees = True)
-                # LOGGER.debug(f"ORIENTATION AROUND Y IS {euler_angles[0]}")
-        
-            async with self.motion.lock:
-                trans = Transition(R, t, self.memory.current.time - self.memory.last.time)
-                self.motion.append(trans)
-
-        
-            
-            if self.debug:
-                R, t, dt = await self.get_odometry_values()
-                self.position += self.orientation.dot(t)
+                        R = self.motion.current.R
+                #update orientation with last rotation:         
+                async with self.orientation_lock:
+                    self.orientation = np.dot(self.orientation, R)  
+                continue
                 
-                self.orientation = np.dot(self.orientation, R)
-                log_pos = np.concatenate((np.array([self.memory.last.count]), self.position.flatten()), axis=0)
-                utils.save_numpy_array_to_file_on_new_line(log_pos.flatten().round(3), "./results/position.txt")
-                utils.draw_matches_and_write_results(self.memory.last, self.memory.current, matches,R, t)
                 
-            if not self.debug:
-                _, _ , dt = await self.get_odometry_values()
-                LOGGER.debug(f"TIME BETWEEN FRAMES IS DT: {dt}")
+            else:
+                try:
+                    
+                    E, mask_e = self.get_essential_matrix(old_matches, cur_matches)
+                    R, t = self.recover_pose(E, mask_e, old_matches, cur_matches)
+                    
+                                    
+                except cv2.error as e:
+                    self.count_cv2_error +=1
+                    LOGGER.error(f"Couldn't recover essential matrix or pose from essential matrix, got {e}")
+                
+                    async with self.motion.lock:
+                        R = self.motion.current.R
+                
+                    #update orientation with last rotation:         
+                    async with self.orientation_lock:
+                        self.orientation = np.dot(self.orientation, R)
+                    continue
+                
+                R, norm, _, _, _ = utils.check_norm(R, 100)
+                
+                if norm>100:
+                    self.norm_big +=1
+                    async with self.motion.lock:
+                        R = self.motion.current.R
+                    # update orientation with last rotation:  
+                    async with self.orientation_lock:
+                        self.orientation = np.dot(self.orientation, R)  
+                    continue
+
+                #update orientation with new rotation:        
+                async with self.orientation_lock:
+                    self.orientation = np.dot(self.orientation, R)
+
+                #update odometry values
+                async with self.motion.lock:
+                    trans = Transition(R, t, self.memory.current.time - self.memory.last.time)
+                    self.motion.append(trans)
+
+            # if self.debug:
+            #     R, t, _ = await self.get_odometry_values()
+            #     self.position += self.orientation.dot(t)
+                
+            #     self.orientation = np.dot(self.orientation, R)
+            #     log_pos = np.concatenate((np.array([self.memory.last.count]), self.position.flatten()), axis=0)
+            #     utils.save_numpy_array_to_file_on_new_line(log_pos.flatten().round(3), "./results/position.txt")
+            #     utils.draw_matches_and_write_results(self.memory.last, self.memory.current, matches,R, t)
+                
+# 
+            # _, _ , dt = await self.get_odometry_values()
+                
             #Auto-tune sleeping time with respect to the stream and inference speed
-            # self.sleep = max(self.sleep+ self.time_between_frames_s-dt,0)
-            LOGGER.debug(f"sleep is : {self.sleep}")
-    
+            # self.sleep = min(max(self.sleep+ self.time_between_frames_s-dt,0), self.time_between_frames_s)
+            # LOGGER.debug(f"sleep is : {self.sleep}")
             
+            LOGGER.debug(f'ITERATION {self.count}')
+            LOGGER.debug(f"Failed matches {self.count_failed_matches/self.count * 100}%")
+            LOGGER.debug(f"Failed cv2 {self.count_cv2_error/self.count * 100}%")
+            LOGGER.debug(f"Failed norm {self.norm_big/self.count * 100}%")
             # await asyncio.sleep(self.sleep)
 
     def get_keypoints(self):
@@ -191,30 +213,29 @@ class ORBVisualOdometry(object):
         
         if self.matcher_type == "flann":
             matches = self.flann.knnMatch(self.memory.last.p_descriptors,self.memory.current.p_descriptors,k=2)
-            # if self.debug:
-            LOGGER.info(f"number of matches before ratio test is {len(matches)}")
+            if self.debug:
+                LOGGER.info(f"number of matches before ratio test is {len(matches)}")
             good_matches = []
-            ##Do Lowe's ratio test
-
-            # for m, n in matches:
             
-            
+            #perform Lowe's ration test
             for match in matches:
                 if len(match) == 2:
                     m, n = match
                     if m.distance < self.lowe_ratio_threshold * n.distance:
                         good_matches.append(m)
-                
+                        
+                #sometimes knn finds only one good match
+                #in this case, we keep it 
                 elif len(match) ==1 :
-                    # continue
+                    # continues
                     good_matches.append(match[0])
                                 
                 else:
                     continue
                 
                     
-            # if self.debug:
-            LOGGER.info(f"number of good_matches after ratio test is {len(good_matches)}")
+            if self.debug:
+                LOGGER.info(f"number of good_matches after ratio test is {len(good_matches)}")
                 
             old_matches = np.array([self.memory.last.p[mat.queryIdx].pt for mat in good_matches])
             cur_matches = np.array([self.memory.current.p[mat.trainIdx].pt for mat in good_matches])
@@ -282,7 +303,7 @@ class ORBVisualOdometry(object):
         
 class State(object):
 
-    def __init__(self, count):
+    def __init__(self, count=0):
         self.count = count
         self.time = None
         self.frame = None
@@ -307,7 +328,10 @@ class Memory(deque):
     
     @property    
     def current(self) -> State:
-        return self[-1]
+        if len(self)>0:
+            return self[-1]
+        else:
+            return State()
     
     @property
     def last(self)-> State:
