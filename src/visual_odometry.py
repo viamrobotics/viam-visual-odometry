@@ -158,16 +158,16 @@ class ORBVisualOdometry(object):
                         self.orientation = np.dot(self.orientation, R)
                     continue
                 
-                # R, norm, _, _, _ = utils.check_norm(R, 100)
+                R, norm, _, _, _ = utils.check_norm(R, 100)
                 
-                # if norm>100:
-                #     self.norm_big +=1
-                #     async with self.motion.lock:
-                #         R = self.motion.current.R
-                #     # update orientation with last rotation:  
-                #     async with self.orientation_lock:
-                #         self.orientation = np.dot(self.orientation, R)  
-                #     continue
+                if norm>100:
+                    self.norm_big +=1
+                    async with self.motion.lock:
+                        R = self.motion.current.R
+                    # update orientation with last rotation:  
+                    async with self.orientation_lock:
+                        self.orientation = np.dot(self.orientation, R)  
+                    continue
 
                 #update orientation with new rotation:        
                 async with self.orientation_lock:

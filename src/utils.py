@@ -169,7 +169,7 @@ def save_numpy_array_to_file_on_new_line(array, file_path):
 
 
 def check_norm(R, threshold=100):
-    Y, Z, X = Rotation.from_matrix(R).as_euler(seq="YZX", degrees=True)
+    Y, Z, X = Rotation.from_matrix(R).as_euler(seq="yzx", degrees=True)
     
     norm = np.linalg.norm(np.array([Y, Z, X]))
     if norm > threshold:
