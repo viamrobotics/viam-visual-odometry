@@ -59,6 +59,7 @@ class ORBVisualOdometry(object):
         self.count = -1
         self.count_failed_matches = 0
         self.count_cv2_error = 0
+        self.count_old_image_issue = 0
         self.norm_big = 0
         
         self.position = np.zeros((3,1))
@@ -197,6 +198,7 @@ class ORBVisualOdometry(object):
             LOGGER.debug(f'ITERATION {self.count}')
             LOGGER.debug(f"Failed matches {self.count_failed_matches/self.count * 100}%")
             LOGGER.debug(f"Failed cv2 {self.count_cv2_error/self.count * 100}%")
+            LOGGER.debug(f"Failed old_image {self.count_old_image_issue/self.count * 100}%")
             LOGGER.debug(f"Failed norm {self.norm_big/self.count * 100}%")
             # await asyncio.sleep(self.sleep)
 
@@ -282,6 +284,7 @@ class ORBVisualOdometry(object):
         #check if the last image is too old so it's unlikely to find matching points
         dt =self.memory.current.time - self.memory.last.time 
         if dt > self.time_between_frames_s*5:
+            self.count_old_image_issue +=1
             LOGGER.debug("REACH THE OLD IMAGE ISSUE")
             self.memory.append(await self.get_state())
 
