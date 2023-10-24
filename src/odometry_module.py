@@ -87,7 +87,7 @@ class Odometry(MovementSensor, Reconfigurable):
         matcher = get_attribute_from_config("matcher", "flann")
         lowe_ratio_threshold = get_attribute_from_config("lowe_ratio_threshold", .8)
         ransac_prob = get_attribute_from_config("ransac_prob", .99)
-        ransac_threshold_px = get_attribute_from_config("ransac_threshold_px", .5)
+        ransac_threshold_px = get_attribute_from_config("ransac_threshold_px", 2)
         
         self.visual_odometry = ORBVisualOdometry(cam= camera,
                                                 camera_matrix = camera_matrix,
