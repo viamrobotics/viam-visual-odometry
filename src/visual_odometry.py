@@ -42,7 +42,8 @@ class ORBVisualOdometry(object):
                  ransac_prob:float, 
                  ransac_threshold:float,
                  window:int=5,
-                 debug:bool = True):
+                 save_trajectory:bool = False, 
+                 log_error_proportion=False):
         self.cam = cam
         self.camera_matrix = camera_matrix
         self.distort_param = distortion_param
@@ -97,7 +98,9 @@ class ORBVisualOdometry(object):
         self.lowe_ratio_threshold = lowe_ratio_threshold
         self.ransac_prob = ransac_prob
         self.ransac_threshold = ransac_threshold
-        self.debug = debug
+        
+        self.save_trajectory = save_trajectory
+        self.log_error_proportion = log_error_proportion
         self.orientation = np.eye(3).astype(np.float64)
         self.running = False
         self.running_lock = asyncio.Lock()
@@ -113,7 +116,7 @@ class ORBVisualOdometry(object):
             if not self.running:
                 self.running = True
                 self.run_odometry_loop()
-            
+
     async def get_current_transition_values(self):
         return await self.motion.get_current_transition_values()
     
@@ -127,11 +130,16 @@ class ORBVisualOdometry(object):
             await self.update_states()
             self.get_keypoints()
 
-            matches, old_matches, cur_matches = self.get_matches()
+            try:
+                matches, old_matches, cur_matches = self.get_matches()
+            except cv2.error as e:
+                LOGGER.debug(f"couldn't get matches got {e}")
+                continue
             
-            if len(matches)<50:
-                self.count_failed_matches +=1
-                LOGGER.warn("Not enough matches to be trustworthy. Skipping images.")
+            if len(matches)<30:
+                if self.log_error_proportion:
+                    self.count_failed_matches +=1
+                LOGGER.debug("Not enough matches to be trustworthy. Skipping images.")
                 async with self.motion.lock:
                         R = self.motion.current.R
                 #update orientation with last rotation:         
@@ -148,8 +156,9 @@ class ORBVisualOdometry(object):
                     
                                     
                 except cv2.error as e:
-                    self.count_cv2_error +=1
-                    LOGGER.error(f"Couldn't recover essential matrix or pose from essential matrix, got {e}")
+                    if self.log_error_proportion:
+                        self.count_cv2_error +=1
+                    LOGGER.debug(f"Couldn't recover essential matrix or pose from essential matrix, got {e}")
                 
                     async with self.motion.lock:
                         R = self.motion.current.R
@@ -179,28 +188,31 @@ class ORBVisualOdometry(object):
                     trans = Transition(R, t, self.memory.current.time - self.memory.last.time)
                     self.motion.append(trans)
 
-            # if self.debug:
-            #     R, t, _ = await self.get_odometry_values()
-            #     self.position += self.orientation.dot(t)
-                
-            #     self.orientation = np.dot(self.orientation, R)
-            #     log_pos = np.concatenate((np.array([self.memory.last.count]), self.position.flatten()), axis=0)
-            #     utils.save_numpy_array_to_file_on_new_line(log_pos.flatten().round(3), "./results/position.txt")
-            #     utils.draw_matches_and_write_results(self.memory.last, self.memory.current, matches,R, t)
+            if self.save_trajectory:
+                R, t, _ = await self.get_odometry_values()
+                self.position += self.orientation.dot(t)
+                log_pos = np.concatenate((np.array([self.memory.last.count]), self.position.flatten()), axis=0)
+                utils.save_numpy_array_to_file_on_new_line(log_pos.flatten().round(3), "./results/position.txt")
+                utils.draw_matches_and_write_results(self.memory.last, self.memory.current, matches,R, t)
                 
 # 
-            # _, _ , dt = await self.get_odometry_values()
+            _, _ , dt = await self.get_odometry_values()
                 
-            #Auto-tune sleeping time with respect to the stream and inference speed
-            # self.sleep = min(max(self.sleep+ self.time_between_frames_s-dt,0), self.time_between_frames_s)
-            # LOGGER.debug(f"sleep is : {self.sleep}")
+            # Auto-tune sleeping time with respect to the stream and inference speed
+            LOGGER.error(f'ITERATION {self.count}')
+            LOGGER.error(f"last sleep is : {self.sleep}")
+            LOGGER.error(f"time between images  is : {dt}")
+            self.sleep = max(self.sleep+ self.time_between_frames_s-dt,0)
+            LOGGER.error(f"sleep is : {self.sleep}")
             
-            LOGGER.debug(f'ITERATION {self.count}')
-            LOGGER.debug(f"Failed matches {self.count_failed_matches/self.count * 100}%")
-            LOGGER.debug(f"Failed cv2 {self.count_cv2_error/self.count * 100}%")
-            LOGGER.debug(f"Failed old_image {self.count_old_image_issue/self.count * 100}%")
-            LOGGER.debug(f"Failed norm {self.norm_big/self.count * 100}%")
-            # await asyncio.sleep(self.sleep)
+            
+            await asyncio.sleep(self.sleep)
+            if self.log_error_proportion:
+                LOGGER.debug(f'ITERATION {self.count}')
+                LOGGER.debug(f"Failed matches {self.count_failed_matches/self.count * 100}%")
+                LOGGER.debug(f"Failed cv2 {self.count_cv2_error/self.count * 100}%")
+                LOGGER.debug(f"Failed old_image {self.count_old_image_issue/self.count * 100}%")
+                LOGGER.debug(f"Failed norm {self.norm_big/self.count * 100}%")
 
     def get_keypoints(self):
         self.memory.current.get_keypoints(self.orb)
@@ -215,8 +227,8 @@ class ORBVisualOdometry(object):
         
         if self.matcher_type == "flann":
             matches = self.flann.knnMatch(self.memory.last.p_descriptors,self.memory.current.p_descriptors,k=2)
-            if self.debug:
-                LOGGER.info(f"number of matches before ratio test is {len(matches)}")
+            # if self.log_error_proportion:
+            #     LOGGER.info(f"number of matches before ratio test is {len(matches)}")
             good_matches = []
             
             #perform Lowe's ration test
@@ -235,9 +247,8 @@ class ORBVisualOdometry(object):
                 else:
                     continue
                 
-                    
-            if self.debug:
-                LOGGER.info(f"number of good_matches after ratio test is {len(good_matches)}")
+            # if self.log_error_proportion:
+            #     LOGGER.info(f"number of good_matches after ratio test is {len(good_matches)}")
                 
             old_matches = np.array([self.memory.last.p[mat.queryIdx].pt for mat in good_matches])
             cur_matches = np.array([self.memory.current.p[mat.trainIdx].pt for mat in good_matches])
@@ -283,9 +294,10 @@ class ORBVisualOdometry(object):
         
         #check if the last image is too old so it's unlikely to find matching points
         dt =self.memory.current.time - self.memory.last.time 
-        if dt > self.time_between_frames_s*5:
-            self.count_old_image_issue +=1
-            LOGGER.debug("REACH THE OLD IMAGE ISSUE")
+        if dt > self.time_between_frames_s*10:
+            if self.log_error_proportion:
+                self.count_old_image_issue +=1
+            LOGGER.debug("too old image, getting a new one")
             self.memory.append(await self.get_state())
 
 
