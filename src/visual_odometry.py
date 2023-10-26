@@ -197,18 +197,9 @@ class ORBVisualOdometry(object):
                 
 # 
             _, _ , dt = await self.get_odometry_values()
-                
-            # Auto-tune sleeping time with respect to the stream and inference speed
-            LOGGER.error(f'ITERATION {self.count}')
-            LOGGER.error(f"last sleep is : {self.sleep}")
-            LOGGER.error(f"time between images  is : {dt}")
             self.sleep = max(self.time_between_frames_s+self.sleep - dt, 0)
-            # self.sleep = max(self.time_between_frames_s-dt,0)
-            # self.sleep = self.time_between_frames_s - dt
-            LOGGER.error(f"sleep is : {self.sleep}")
-            
-            # self.sleep = max(self.sleep,0)
             await asyncio.sleep(self.sleep)
+            
             if self.log_error_proportion:
                 LOGGER.debug(f'ITERATION {self.count}')
                 LOGGER.debug(f"Failed matches {self.count_failed_matches/self.count * 100}%")

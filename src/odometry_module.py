@@ -147,13 +147,13 @@ class Odometry(MovementSensor, Reconfigurable):
                               **kwargs) -> Orientation:
         
         orientation = await self.visual_odometry.get_orientation()
-        rot = Rotation.from_matrix(orientation)
-        euler_angles = rot.as_euler("YZX", degrees = True)
-        # LOGGER.debug(f"ORIENTATION AROUND Y IS {euler_angles[0]}")
-        return Orientation(o_x= 0, 
-                           o_y =0, 
-                           o_z = 1, 
-                           theta=euler_angles[0])
+        q = Rotation.from_matrix(orientation).as_quat()
+        quat = Quaternion(q[0], q[1], q[2], q[3])
+        ov = quat.to_orientation_vector()
+        return Orientation(o_x=  ov.unit_sphere_vec.x, 
+                           o_y =ov.unit_sphere_vec.y, 
+                           o_z = ov.unit_sphere_vec.x, 
+                           theta=ov.theta)
         
     async def get_properties(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                              **kwargs) -> MovementSensor.Properties:
