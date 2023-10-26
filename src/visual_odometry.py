@@ -202,7 +202,7 @@ class ORBVisualOdometry(object):
             LOGGER.error(f'ITERATION {self.count}')
             LOGGER.error(f"last sleep is : {self.sleep}")
             LOGGER.error(f"time between images  is : {dt}")
-            self.sleep = self.sleep + self.time_between_frames_s-dt,0
+            self.sleep = self.sleep + self.time_between_frames_s-dt
             LOGGER.error(f"sleep is : {self.sleep}")
             
             
