@@ -202,12 +202,12 @@ class ORBVisualOdometry(object):
             LOGGER.error(f'ITERATION {self.count}')
             LOGGER.error(f"last sleep is : {self.sleep}")
             LOGGER.error(f"time between images  is : {dt}")
-            # self.sleep = self.time_between_frames_s+self.sleep - dt
-            self.sleep = self.time_between_frames_s - dt
+            self.sleep = max(self.time_between_frames_s+self.sleep - dt, 0)
+            # self.sleep = self.time_between_frames_s - dt
             LOGGER.error(f"sleep is : {self.sleep}")
             
-            
-            await asyncio.sleep(max(self.sleep,0))
+            # self.sleep = max(self.sleep,0)
+            await asyncio.sleep(self.sleep)
             if self.log_error_proportion:
                 LOGGER.debug(f'ITERATION {self.count}')
                 LOGGER.debug(f"Failed matches {self.count_failed_matches/self.count * 100}%")
@@ -305,8 +305,8 @@ class ORBVisualOdometry(object):
     async def get_state(self):
         self.count +=1
         res = State(count=self.count)
-        res.time = time()
         img = await self.cam.get_image(mime_type=CameraMimeType.JPEG)
+        res.time = time()
         if img is None:
             raise ValueError("The image is empty")
         
