@@ -202,11 +202,11 @@ class ORBVisualOdometry(object):
             LOGGER.error(f'ITERATION {self.count}')
             LOGGER.error(f"last sleep is : {self.sleep}")
             LOGGER.error(f"time between images  is : {dt}")
-            self.sleep = max(self.sleep+ self.time_between_frames_s-dt,0)
+            self.sleep = self.sleep + self.time_between_frames_s-dt,0
             LOGGER.error(f"sleep is : {self.sleep}")
             
             
-            await asyncio.sleep(self.sleep)
+            await asyncio.sleep(max(self.sleep,0))
             if self.log_error_proportion:
                 LOGGER.debug(f'ITERATION {self.count}')
                 LOGGER.debug(f"Failed matches {self.count_failed_matches/self.count * 100}%")
