@@ -289,7 +289,7 @@ class ORBVisualOdometry(object):
     async def update_states(self):
         self.memory.append(await self.get_state())
         if len(self.memory)<2:
-            await asyncio.sleep(self.time_between_frames_s) #maybe
+            #await asyncio.sleep(self.time_between_frames_s) #maybe
             self.memory.append(await self.get_state())
         
         
