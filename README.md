@@ -126,7 +126,7 @@ The following attributes are available to configure your Visual odometry module:
 |`matcher`| string | Optional | `"flann"` | Either `"flann"` for [FLANN based matcher](https://docs.opencv.org/3.4/d5/d6f/tutorial_feature_flann_matcher.html) or `"BF"` for brute force matcher. The FLANN matcher will look for the two best matches using the KNN method so Lowe's ratio test can be performed afterward. The [brute force matcher](https://docs.opencv.org/4.x/dc/dc3/tutorial_py_matcher.html) uses Hamming norm. |
 |`lowe_ratio_threshold`| float | Optional | `0.8` | Threshold value to check if the best match is significantly better than the second best match. This value will not be used if the brute force matcher is chosen. |
 | `ransac_prob` | float | Optional | `0.99` | Probability to find a subset without outliers in it. Defines the number of iterations to filter the outliers. The number of iterations is roughly given by $k = \frac{\log(1-p)}{\log(1-w^n)}$, where $n$ is the number of points, $w$ the ratio of inliers to total points.|
-| `ransac_threshold_px` | float | Optional | `0.5` | Maximum error to be classified as inlier.|
+| `ransac_threshold_px` | float | Optional | `2` | Maximum error to be classified as inlier.|
 
 See the [ORB openCV documentation](https://docs.opencv.org/3.4/db/d95/classcv_1_1ORB.html) for more details.
 
