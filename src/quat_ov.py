@@ -99,7 +99,7 @@ class Quaternion:
             new_z_imaginary = new_z.imaginary_vector
             new_x_imaginary = new_x.imaginary_vector
             normal_1 = new_z_imaginary.cross(new_x_imaginary)
-            z_axis_imaginary = Vector3.from_tuple((0, 0, 1))
+            z_axis_imaginary = Vector3(x=0, y=0, z=1)
             normal_2 = new_z_imaginary.cross(z_axis_imaginary)
             cos_theta = Vector3.cosine_between(normal_1, normal_2)
             cos_theta = min(cos_theta, 1)
