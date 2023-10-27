@@ -1,7 +1,9 @@
 from typing import ClassVar, Optional, Dict, Sequence, Any, Mapping, Tuple
 
 from typing_extensions import Self
-
+from scipy.spatial.transform import Rotation
+import PIL
+import numpy as np
 from viam.components.camera import Camera
 from viam.components.movement_sensor.movement_sensor import MovementSensor
 from viam.resource.base import ResourceBase
@@ -16,7 +18,9 @@ from viam.resource.types import Model, ModelFamily
 from .visual_odometry import ORBVisualOdometry
 from .utils import get_camera_matrix, get_distort_param
 import asyncio
+from viam.media.video import CameraMimeType
 from viam.logging import getLogger
+from .quat_ov import Quaternion
 
 LOGGER = getLogger(__name__)
 
@@ -42,7 +46,7 @@ class Odometry(MovementSensor, Reconfigurable):
 
         camera_name = config.attributes.fields["camera_name"].string_value
         if camera_name == "":
-            LOGGER.error("A 'camera_name' attribute is required for visual odometry movement sensor")
+            LOGGER.error("a 'camera_name' attribute is required for visual odometry movement sensor")
         return [camera_name]
 
     def reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
@@ -50,11 +54,21 @@ class Odometry(MovementSensor, Reconfigurable):
         loop.create_task(self._reconfigure(config, dependencies))
 
     async def _reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
+        if hasattr(self, "visual_odometry"):
+            if hasattr(self.visual_odometry, 'task'):
+                self.visual_odometry.task.cancel()
+                LOGGER.debug("shutting down running odometry loop to start a new one ")
+    
         camera_name = config.attributes.fields["camera_name"].string_value
         camera = dependencies[Camera.get_resource_name(camera_name)]
         props = await camera.get_properties()
-        camera_matrix = self.get_camera_matrix_from_properties(props)
+        img = await camera.get_image(mime_type=CameraMimeType.JPEG)
+        scale_x, scale_y = await self.compute_scales(img, props)
+        camera_matrix = self.get_camera_matrix_from_properties(props, scale_x, scale_y)
+        
+        
         distortion_parameters = self.get_distortion_parameters_from_properties(props)
+        
         def get_attribute_from_config(attribute_name:str,  default):
             if attribute_name not in config.attributes.fields:
                 return default
@@ -80,8 +94,8 @@ class Odometry(MovementSensor, Reconfigurable):
         matcher = get_attribute_from_config("matcher", "flann")
         lowe_ratio_threshold = get_attribute_from_config("lowe_ratio_threshold", .8)
         ransac_prob = get_attribute_from_config("ransac_prob", .99)
-        ransac_threshold_px = get_attribute_from_config("ransac_threshold_px", .5)
-
+        ransac_threshold_px = get_attribute_from_config("ransac_threshold_px", 2)
+        
         self.visual_odometry = ORBVisualOdometry(cam= camera,
                                                 camera_matrix = camera_matrix,
                                                 time_between_frames = time_between_frames_s,
@@ -125,13 +139,21 @@ class Odometry(MovementSensor, Reconfigurable):
 
     async def get_orientation(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                               **kwargs) -> Orientation:
-        raise NotImplementedError
-
+        
+        orientation = await self.visual_odometry.get_orientation()
+        q = Rotation.from_matrix(orientation).as_quat()
+        quat = Quaternion(q[0], q[1], q[2], q[3])
+        ov = quat.to_orientation_vector()
+        return Orientation(o_x=  ov.unit_sphere_vec.x, 
+                           o_y =ov.unit_sphere_vec.y, 
+                           o_z = ov.unit_sphere_vec.x, 
+                           theta=ov.theta)
+        
     async def get_properties(self, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None,
                              **kwargs) -> MovementSensor.Properties:
         return MovementSensor.Properties(linear_velocity_supported=True,
                                          angular_velocity_supported=True,
-                                         orientation_supported=False,
+                                         orientation_supported=True,
                                          position_supported=False,
                                          compass_heading_supported=False,
                                          linear_acceleration_supported=False)
@@ -140,12 +162,25 @@ class Odometry(MovementSensor, Reconfigurable):
                            **kwargs) -> Mapping[str, float]:
         raise NotImplementedError
 
+    
+    async def compute_scales(self, img, props:Camera.Properties):
+        h, w = props.intrinsic_parameters.height_px, props.intrinsic_parameters.width_px
+        if (h == 0)  or ( w == 0 ):
+            raise ValueError("height or width value for intrinsic parameters can't be 0 m")
+        pil_img = img.convert('L')
+        im = np.array(pil_img)
+        
+        ##Check aspect ratio
+        if not (im.shape[0]/im.shape[1]==h/w):
+            raise ValueError(f"aspect ratio of the image must match aspect ratio of the intrinsic parameters to be used")
+        return im.shape[0]/h, im.shape[1]/w
+        
     @staticmethod
-    def get_camera_matrix_from_properties(props: Camera.Properties):
-        fx = props.intrinsic_parameters.focal_x_px
-        fy = props.intrinsic_parameters.focal_y_px
-        ppx = props.intrinsic_parameters.center_x_px
-        ppy = props.intrinsic_parameters.center_y_px
+    def get_camera_matrix_from_properties(props: Camera.Properties, scale_x=1, scale_y = 1):
+        fx = props.intrinsic_parameters.focal_x_px * scale_x
+        fy = props.intrinsic_parameters.focal_y_px * scale_y
+        ppx = props.intrinsic_parameters.center_x_px * scale_x
+        ppy = props.intrinsic_parameters.center_y_px * scale_y
         return get_camera_matrix(fx, fy, ppx, ppy)
 
     @staticmethod
