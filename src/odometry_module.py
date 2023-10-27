@@ -58,13 +58,7 @@ class Odometry(MovementSensor, Reconfigurable):
             if hasattr(self.visual_odometry, 'task'):
                 self.visual_odometry.task.cancel()
                 LOGGER.debug("shutting down running odometry loop to start a new one ")
-        
-             
-        # try:
-        #     self.visual_odometry.task.cancel()
-        # except AttributeError:
-        #     pass
-        
+    
         camera_name = config.attributes.fields["camera_name"].string_value
         camera = dependencies[Camera.get_resource_name(camera_name)]
         props = await camera.get_properties()

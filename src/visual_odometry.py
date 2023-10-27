@@ -220,8 +220,6 @@ class ORBVisualOdometry(object):
         
         if self.matcher_type == "flann":
             matches = self.flann.knnMatch(self.memory.last.p_descriptors,self.memory.current.p_descriptors,k=2)
-            # if self.log_error_proportion:
-            #     LOGGER.info(f"number of matches before ratio test is {len(matches)}")
             good_matches = []
             
             #perform Lowe's ration test
@@ -239,10 +237,7 @@ class ORBVisualOdometry(object):
                                 
                 else:
                     continue
-                
-            # if self.log_error_proportion:
-            #     LOGGER.info(f"number of good_matches after ratio test is {len(good_matches)}")
-                
+
             old_matches = np.array([self.memory.last.p[mat.queryIdx].pt for mat in good_matches])
             cur_matches = np.array([self.memory.current.p[mat.trainIdx].pt for mat in good_matches])
             return good_matches, old_matches, cur_matches
@@ -281,7 +276,6 @@ class ORBVisualOdometry(object):
     async def update_states(self):
         self.memory.append(await self.get_state())
         if len(self.memory)<2:
-            #await asyncio.sleep(self.time_between_frames_s) #maybe
             self.memory.append(await self.get_state())
         
         
