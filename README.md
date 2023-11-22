@@ -1,56 +1,75 @@
-# Monocular Visual Odometry
+# Monocular Visual Odometry Movement Sensor
 [Viam module](https://docs.viam.com/extend/modular-resources/) for monocular visual odometry implemented as a movement sensor.
 
 ![https://github.com/Rob1in/viam_visual_odometry/blob/main/img/trajectory.gif](https://github.com/viamrobotics/viam-visual-odometry/blob/main/img/trajectory.gif?raw=true)
 
-## How to Configure the Module
+## Requirements
 
-https://docs.viam.com/components/movement-sensor/viam-visual-odometry/
-
-## Getting started
-
-All you need is a calibrated camera.
+You must have a calibrated [camera](https://docs.viam.com/components/camera/) configured on your robot.
 
 This module implements two methods of the [movement sensor API](https://docs.viam.com/components/movement-sensor/#api):
   * `GetLinearVelocity()`
   * `GetAngularVelocity()`
 
+Please note that `GetLinearVelocity()` returns an estimation of the instantaneous linear velocity **without scale factor**. Hence, units should not be trusted and `GetLinearVelocity()` should serve as direction estimation.
 
-Please note that GetLinearVelocity returns an estimation of the instantaneous linear velocity **without scale factor**. Hence, units should not be trusted and `GetLinearVelocity()` should serve as direction estimation.
-### Installation
-#### Option 1: `poetry`
+## Build and Run
 
-```
-cd viam-visual-odometry
-poetry install
-```
- In `run.sh`, uncomment the line:
+To use this module, follow these instructions to [add a module from the Viam Registry](https://docs.viam.com/registry/configure/#add-a-modular-resource-from-the-viam-registry) and select the `viam:visual_odometry:opencv_orb` model from the [`monocular-visual-odometry` module](https://app.viam.com/module/viam/agilex-limo).
 
-  ```
-  #exec poetry run python -m src.main $@
-  ```
+## Configure your Monocular Visual Odometry Movement Sensor
 
-  and remove the line:
-  ```
-  exec python3 -m src.main $@
-  ```
+> [!NOTE]  
+> Before configuring your movement sensor, you must [create a robot](https://docs.viam.com/manage/fleet/robots/#add-a-new-robot).
 
+Navigate to the **Config** tab of your robot’s page in [the Viam app](https://app.viam.com/). Click on the **Components** subtab and click **Create component**. Select the `movement_sensor` type, then select the `visual_odometry:opencv_orb` model. Enter a name for your movement sensor and click **Create**.
 
-#### Option 2 : `pip install`
+On the new component panel, copy and paste the following attribute template into your movement sensor’s **Attributes** box. 
 
-```
-pip install -r requirements.txt
+```json
+{
+  "camera_name": "<your-camera-name>",
+  "time_between_frames_s": <time_seconds>,
+  "lowe_ratio_threshold": <lowe_ratio_threshold>
+}
 ```
 
-## Config
-### Example config 
+> [!NOTE]  
+> For more information, see [Configure a Robot](https://docs.viam.com/manage/configuration/).
+
+### Attributes
+
+The following attributes are available for `visual_odometry:opencv_orb` movement sensors:
+
+| Name | Type | Inclusion | Default | Description |
+| ---- | ---- | --------- | --------| ------------ |
+| `camera_name` | string | **Required** | | Name of the camera you want to use to infer motion. |
+| `time_between_frames_s` | float | Optional | `0.1` | Target time between two successive frames given in seconds. Depending on the inference time and the time to get an image, the sleeping time after each inference will be auto-tuned to reach this target. Also, if the time between two successive frames is 5x larger than `time_between_frames_s`, another frame will be requested. This value depends on the speed of your system. |
+|`orb_n_features`| int | Optional | `10000` | Maximum number of features to retain. |
+|`orb_edge_threshold`| int | Optional | `31` | Size of the border where the features are not detected. It should roughly match the `orb_patch_size` attribute.  |
+|`orb_patch_size`| int | Optional | `31` | Size of the patch used by the oriented BRIEF descriptor.|
+|`orb_n_levels`| int | Optional | `8` |Number of pyramid levels.|
+|`orb_first_level`| int | Optional | `0` |Level of pyramid to put source image to.|
+|`orb_fast_threshold`| int | Optional | `20` | Fast threshold. |
+|`orb_scale_factor`| float | Optional | `1.2` | Pyramid decimation ratio, greater than 1. |
+|`orb_WTA_K`| int | Optional | `2` | Number of points that produce each element of the oriented BRIEF descriptor. |
+|`matcher`| string | Optional | `"flann"` | Either `"flann"` for [FLANN based matcher](https://docs.opencv.org/3.4/d5/d6f/tutorial_feature_flann_matcher.html) or `"BF"` for brute force matcher. The FLANN matcher will look for the two best matches using the KNN method so Lowe's ratio test can be performed afterward. The [brute force matcher](https://docs.opencv.org/4.x/dc/dc3/tutorial_py_matcher.html) uses Hamming norm. |
+|`lowe_ratio_threshold`| float | Optional | `0.8` | Threshold value to check if the best match is significantly better than the second best match. This value will not be used if the brute force matcher is chosen. |
+| `ransac_prob` | float | Optional | `0.99` | Probability to find a subset without outliers in it. Defines the number of iterations to filter the outliers. The number of iterations is roughly given by $k = \frac{\log(1-p)}{\log(1-w^n)}$, where $n$ is the number of points, $w$ the ratio of inliers to total points.|
+| `ransac_threshold_px` | float | Optional | `2` | Maximum error to be classified as an inlier.|
+
+See the [ORB openCV documentation](https://docs.opencv.org/3.4/db/d95/classcv_1_1ORB.html) for more details.
+
+### Example configuration (with camera) 
+
 ```json
 {
   "modules": [
     {
-      "name": "my-odometry",
-      "executable_path": "/path/to/run.sh", 
-      "type" : "local"
+      "type": "registry",
+      "name": "viam_monocular-visual-odometry",
+      "module_id": "viam:monocular-visual-odometry",
+      "version": "0.0.8"
     }
   ],
   "components": [
@@ -95,40 +114,32 @@ pip install -r requirements.txt
 ```
 
 The camera **needs** to have intrinsics parameters. You can follow these [instructions](https://github.com/viam-labs/camera-calibration/tree/main) to calibrate your camera.
-If you want to grab the module from the registry, change the `modules` field to:
 
-```json
-  "modules": [
-    {
-      "version": "^0.0.6",
-      "module_id": "viam:monocular-visual-odometry",
-      "name": "my-odometry",
-      "type": "registry"
-    }
-  ]
+### Local Installation
+
+#### Option 1: `poetry`
+
 ```
+cd viam-visual-odometry
+poetry install
+```
+ In `run.sh`, uncomment the line:
 
-### Attributes description
-The following attributes are available to configure your Visual odometry module:
+  ```
+  #exec poetry run python -m src.main $@
+  ```
 
-| Name | Type | Inclusion | Default | Description |
-| ---- | ---- | --------- | --------| ------------ |
-| `camera_name` | string | **Required** | | Camera name to be used for inferring the motion. |
-| `time_between_frames_s` | float | Optional | `0.1` | Target time between two successive frames given in seconds. Depending on the inference time and the time to get an image, the sleeping time after each inference will be auto-tuned to reach this target. Also, if the time between two successive frame is 5x larger than `time_between_frames_s`, another frame will be requested. This value depends on the speed of your system.|
-|`orb_n_features`| int | Optional | `10000` | Maximum number of features to retain. |
-|`orb_edge_threshold`| int | Optional | `31` | Size of the border where the features are not detected. It should roughly match the `orb_patch_size` attribute.  |
-|`orb_patch_size`| int | Optional | `31` | Size of the patch used by the oriented BRIEF descriptor.|
-|`orb_n_levels`| int | Optional | `8` |Number of pyramid levels.|
-|`orb_first_level`| int | Optional | `0` |Level of pyramid to put source image to.|
-|`orb_fast_threshold`| int | Optional | `20` | Fast threshold. |
-|`orb_scale_factor`| float | Optional | `1.2` | Pyramid decimation ratio, greater than 1. |
-|`orb_WTA_K`| int | Optional | `2` | Number of points that produce each element of the oriented BRIEF descriptor. |
-|`matcher`| string | Optional | `"flann"` | Either `"flann"` for [FLANN based matcher](https://docs.opencv.org/3.4/d5/d6f/tutorial_feature_flann_matcher.html) or `"BF"` for brute force matcher. The FLANN matcher will look for the two best matches using the KNN method so Lowe's ratio test can be performed afterward. The [brute force matcher](https://docs.opencv.org/4.x/dc/dc3/tutorial_py_matcher.html) uses Hamming norm. |
-|`lowe_ratio_threshold`| float | Optional | `0.8` | Threshold value to check if the best match is significantly better than the second best match. This value will not be used if the brute force matcher is chosen. |
-| `ransac_prob` | float | Optional | `0.99` | Probability to find a subset without outliers in it. Defines the number of iterations to filter the outliers. The number of iterations is roughly given by $k = \frac{\log(1-p)}{\log(1-w^n)}$, where $n$ is the number of points, $w$ the ratio of inliers to total points.|
-| `ransac_threshold_px` | float | Optional | `2` | Maximum error to be classified as inlier.|
+  and remove the line:
+  ```
+  exec python3 -m src.main $@
+  ```
 
-See the [ORB openCV documentation](https://docs.opencv.org/3.4/db/d95/classcv_1_1ORB.html) for more details.
+
+#### Option 2 : `pip install`
+
+```
+pip install -r requirements.txt
+```
 
 ## Deeper dive
 
