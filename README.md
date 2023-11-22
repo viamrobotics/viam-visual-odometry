@@ -15,7 +15,7 @@ Please note that `GetLinearVelocity()` returns an estimation of the instantaneou
 
 ## Build and Run
 
-To use this module, follow these instructions to [add a module from the Viam Registry](https://docs.viam.com/registry/configure/#add-a-modular-resource-from-the-viam-registry) and select the `viam:visual_odometry:opencv_orb` model from the [`monocular-visual-odometry` module](https://app.viam.com/module/viam/agilex-limo).
+To use this module, follow these instructions to [add a module from the Viam Registry](https://docs.viam.com/registry/configure/#add-a-modular-resource-from-the-viam-registry) and select the `viam:visual_odometry:opencv_orb` model from the [`monocular-visual-odometry` module](https://app.viam.com/module/viam/monocular-visual-odometry).
 
 ## Configure your Monocular Visual Odometry Movement Sensor
 
