@@ -11,7 +11,7 @@ python = ">=3.9,<3.12"
 scipy = "^1.11.1"
 numpy = "^1.25.2"
 opencv-python = "^4.8.0.74"
-pillow = "^10.0.0"
+pillow = "^10.0.1"
 viam-sdk = "^0.4.6"
 
 [tool.poetry.group.visualization.dependencies]
