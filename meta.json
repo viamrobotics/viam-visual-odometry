@@ -1,5 +1,5 @@
 {
-  "name": "viam:monocular-visual-odometry",
+  "module_id": "viam:monocular-visual-odometry",
   "visibility": "public",
   "url": "https://github.com/viamrobotics/viam-visual-odometry",
   "description": "ORB Monocular visual odometry implemented as movement sensor.",
