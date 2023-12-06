@@ -25,11 +25,10 @@ To use this module, follow these instructions to [add a module from the Viam Reg
 Follow [these instructions](https://docs.viam.com/components/camera/) to configure a camera on your machine.
 Once you have configured a `camera` component, you need to calibrate it.
 Because the `monocular-visual-odometry` module performs visual odometry calculations, its visual data source (the camera) must be as well defined as possible.
-These calibration steps ensure that the video stream data that reaches the module is as uniform as possible when calculating measurements.
+The following calibration steps ensure that the video stream data that reaches the module is as uniform as possible when calculating measurements.
 
 1. Follow the [Calibrate a camera](https://docs.viam.com/components/camera/calibrate/) procedure to generate the required intrinsic parameters specific to your camera.
-1. Copy the resulting intrinsics data into your robot configuration, either in the **Config builder** or in the **Raw JSON**.
-   See the JSON Example tab above for an example intrinsics configuration.
+1. Copy the resulting intrinsics data into your camera's configuration attributes, either in the **Config builder** or in the **Raw JSON**.
 
 Camera calibration results should look similar to the following example, with readings specific to your camera:
 
