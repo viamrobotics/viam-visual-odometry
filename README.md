@@ -1,11 +1,7 @@
 # Monocular Visual Odometry Movement Sensor
-[Viam module](https://docs.viam.com/extend/modular-resources/) for monocular visual odometry implemented as a movement sensor.
+A `monocular-visual-odometry` [modular resource](https://docs.viam.com/extend/modular-resources/) which uses monocular visual odometry to enable any calibrated camera to function as a movement sensor. In this way, you can add basic movement sensing to your camera-equipped robot without needing a dedicated hardware movement sensor.
 
 ![https://github.com/Rob1in/viam_visual_odometry/blob/main/img/trajectory.gif](https://github.com/viamrobotics/viam-visual-odometry/blob/main/img/trajectory.gif?raw=true)
-
-## Requirements
-
-You must have a calibrated [camera](https://docs.viam.com/components/camera/) configured on your robot.
 
 This module implements two methods of the [movement sensor API](https://docs.viam.com/components/movement-sensor/#api):
   * `GetLinearVelocity()`
@@ -13,8 +9,9 @@ This module implements two methods of the [movement sensor API](https://docs.via
 
 Please note that `GetLinearVelocity()` returns an estimation of the instantaneous linear velocity **without scale factor**. Hence, units should not be trusted and `GetLinearVelocity()` should serve as direction estimation.
 
-While `monocular-visual-odometry` enables you to add movement sensing abilities to your robot without needing specialized hardware, a dedicated [movement sensor](https://docs.viam.com/components/movement-sensor/) will generally provide more accurate readings.
-If your robot requires precise awareness of its location and its movement, you should consider using a dedicated movement sensor in addition to the `monocular-visual-odometry` module.
+## Requirements
+
+You must have a calibrated [camera](https://docs.viam.com/components/camera/) configured on your robot.
 
 ## Build and Run
 
