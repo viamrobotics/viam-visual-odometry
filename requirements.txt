@@ -1,4 +1,4 @@
 opencv-python==4.8.0.74
 scipy
 numpy
-viam-sdk==0.6.1
+viam-sdk
