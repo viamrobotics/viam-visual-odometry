@@ -2,7 +2,7 @@ from typing import ClassVar, Optional, Dict, Sequence, Any, Mapping, Tuple
 
 from typing_extensions import Self
 from scipy.spatial.transform import Rotation
-import PIL
+from viam.media.video import ViamImage
 import numpy as np
 from viam.components.camera import Camera
 from viam.components.movement_sensor.movement_sensor import MovementSensor
@@ -163,11 +163,11 @@ class Odometry(MovementSensor, Reconfigurable):
         raise NotImplementedError
 
     
-    async def compute_scales(self, img, props:Camera.Properties):
+    async def compute_scales(self, img: ViamImage, props:Camera.Properties):
         h, w = props.intrinsic_parameters.height_px, props.intrinsic_parameters.width_px
         if (h == 0)  or ( w == 0 ):
             raise ValueError("height or width value for intrinsic parameters can't be 0 m")
-        pil_img = img.convert('L')
+        pil_img = img.image.convert('L')
         im = np.array(pil_img)
         
         ##Check aspect ratio

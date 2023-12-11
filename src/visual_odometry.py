@@ -297,7 +297,7 @@ class ORBVisualOdometry(object):
             raise ValueError("The image is empty")
         
         ##TODO: Benchmark those conversions
-        pil_image = img.convert('L')
+        pil_image = img.image().convert('L')
         open_cv_image = np.array(pil_image)
         res.frame = open_cv_image.copy()
         return res
