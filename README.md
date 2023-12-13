@@ -1,11 +1,7 @@
 # Monocular Visual Odometry Movement Sensor
-[Viam module](https://docs.viam.com/extend/modular-resources/) for monocular visual odometry implemented as a movement sensor.
+A `monocular-visual-odometry` [modular resource](https://docs.viam.com/extend/modular-resources/) which uses monocular visual odometry to enable any calibrated camera to function as a movement sensor. In this way, you can add basic movement sensing to your camera-equipped robot without needing a dedicated hardware movement sensor.
 
 ![https://github.com/Rob1in/viam_visual_odometry/blob/main/img/trajectory.gif](https://github.com/viamrobotics/viam-visual-odometry/blob/main/img/trajectory.gif?raw=true)
-
-## Requirements
-
-You must have a calibrated [camera](https://docs.viam.com/components/camera/) configured on your robot.
 
 This module implements two methods of the [movement sensor API](https://docs.viam.com/components/movement-sensor/#api):
   * `GetLinearVelocity()`
@@ -13,14 +9,50 @@ This module implements two methods of the [movement sensor API](https://docs.via
 
 Please note that `GetLinearVelocity()` returns an estimation of the instantaneous linear velocity **without scale factor**. Hence, units should not be trusted and `GetLinearVelocity()` should serve as direction estimation.
 
+## Requirements
+
+You must have a calibrated [camera](https://docs.viam.com/components/camera/) configured on your robot.
+
 ## Build and Run
 
 To use this module, follow these instructions to [add a module from the Viam Registry](https://docs.viam.com/registry/configure/#add-a-modular-resource-from-the-viam-registry) and select the `viam:visual_odometry:opencv_orb` model from the [`monocular-visual-odometry` module](https://app.viam.com/module/viam/monocular-visual-odometry).
 
-## Configure your Monocular Visual Odometry Movement Sensor
+## Configure and calibrate your camera
 
 > [!NOTE]  
-> Before configuring your movement sensor, you must [create a robot](https://docs.viam.com/manage/fleet/robots/#add-a-new-robot).
+> Before configuring your camera, you must [create a robot](https://docs.viam.com/manage/fleet/robots/#add-a-new-robot).
+
+Follow [these instructions](https://docs.viam.com/components/camera/) to configure a camera on your machine.
+Once you have configured a `camera` component, you need to calibrate it.
+Because the `monocular-visual-odometry` module performs visual odometry calculations, its visual data source (the camera) must be as well defined as possible.
+The following calibration steps ensure that the video stream data that reaches the module is as uniform as possible when calculating measurements.
+
+1. Follow the [Calibrate a camera](https://docs.viam.com/components/camera/calibrate/) procedure to generate the required intrinsic parameters specific to your camera.
+1. Copy the resulting intrinsics data into your camera's configuration attributes, either in the **Config builder** or in the **Raw JSON**.
+
+Camera calibration results should look similar to the following example, with readings specific to your camera:
+
+Example output:
+
+```json {class="line-numbers linkable-line-numbers"}
+"intrinsic_parameters": {
+    "fy": 940.2928257873841,
+    "height_px": 480,
+    "ppx": 320.6075282958033,
+    "ppy": 239.14408757087756,
+    "width_px": 640,
+    "fx": 939.2693584627577
+},
+"distortion_parameters": {
+    "rk2": 0.8002516496932317,
+    "rk3": -5.408034254951954,
+    "tp1": -0.000008996658362365533,
+    "tp2": -0.002828504714921335,
+    "rk1": 0.046535971648456166
+}
+```
+
+## Configure your monocular visual odometry movement sensor
 
 Navigate to the **Config** tab of your robot’s page in [the Viam app](https://app.viam.com/). Click on the **Components** subtab and click **Create component**. Select the `movement_sensor` type, then select the `visual_odometry:opencv_orb` model. Enter a name for your movement sensor and click **Create**.
 
@@ -112,8 +144,6 @@ See the [ORB openCV documentation](https://docs.opencv.org/3.4/db/d95/classcv_1_
 }
 
 ```
-
-The camera **needs** to have intrinsics parameters. You can follow these [instructions](https://github.com/viam-labs/camera-calibration/tree/main) to calibrate your camera.
 
 ### Local Installation
 
