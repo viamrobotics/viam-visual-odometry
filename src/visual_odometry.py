@@ -2,16 +2,12 @@ import time
 from collections import deque
 import numpy as np
 import cv2
-from PIL import Image
 from viam.logging import getLogger
 from scipy.spatial.transform import Rotation
 from viam.components.camera import Camera
-from time import time
 import asyncio
 from viam.media.video import CameraMimeType
-
 from . import utils
-#from . import scale
 from .motion import Transition, Motion
 
 LOGGER = getLogger(__name__)
@@ -297,11 +293,10 @@ class ORBVisualOdometry(object):
             raise ValueError("The image is empty")
         
         ##TODO: Benchmark those conversions
-        pil_image = img.convert('L')
+        pil_image = img.image.convert('L')
         open_cv_image = np.array(pil_image)
         res.frame = open_cv_image.copy()
         return res
-    
         
 class State(object):
 
